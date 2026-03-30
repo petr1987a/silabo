@@ -66,10 +66,9 @@
         #resultDisplay {
             display: none;
             overflow-y: auto;
-            white-space: pre-wrap; /* Сохраняет переносы строк */
+            white-space: pre-wrap;
         }
 
-        /* Стили строк внутри результата */
         .result-line {
             display: flex;
             justify-content: space-between;
@@ -173,23 +172,9 @@
             100% { filter: brightness(1); }
         }
 
-        .red-light.active {
-            background: radial-gradient(circle, #ff4444 0%, #cc0000 70%, #8b0000 100%);
-            box-shadow: 0 0 30px #ff000066;
-            animation: glow 1.5s infinite;
-        }
-
-        .yellow-light.active {
-            background: radial-gradient(circle, #ffff00 0%, #ffd700 70%, #daa520 100%);
-            box-shadow: 0 0 30px #ffff0066;
-            animation: glow 1.8s infinite;
-        }
-
-        .green-light.active {
-            background: radial-gradient(circle, #00ff00 0%, #00cc00 70%, #008000 100%);
-            box-shadow: 0 0 30px #00ff0066;
-            animation: glow 2s infinite;
-        }
+        .red-light.active { background: radial-gradient(circle, #ff4444 0%, #cc0000 70%, #8b0000 100%); box-shadow: 0 0 30px #ff000066; animation: glow 1.5s infinite; }
+        .yellow-light.active { background: radial-gradient(circle, #ffff00 0%, #ffd700 70%, #daa520 100%); box-shadow: 0 0 30px #ffff0066; animation: glow 1.8s infinite; }
+        .green-light.active { background: radial-gradient(circle, #00ff00 0%, #00cc00 70%, #008000 100%); box-shadow: 0 0 30px #00ff0066; animation: glow 2s infinite; }
 
         .dark-theme .light:not(.active) { background: radial-gradient(circle, #3a3a3a 0%, #2a2a2a 70%, #1a1a1a 100%); }
         .light-theme .light:not(.active) { background: radial-gradient(circle, #e0e0e0 0%, #c0c0c0 70%, #a0a0a0 100%); }
@@ -241,7 +226,6 @@
             color: #333;
         }
 
-        /* Специфичные цвета кнопок в темной теме */
         .dark-theme #countButton { background-color: #8b0000; border-color: #ff4444; color: white;}
         .dark-theme #clearButton { background-color: #444; }
         .dark-theme #saveButton { background-color: #225522; border-color: #00ff00; color: white;}
@@ -385,7 +369,7 @@
         const trafficLightCommentDiv = document.getElementById('trafficLightComment');
         const mainPageTitleElement = document.getElementById('mainPageTitle'); 
 
-        let isEditMode = true; // Состояние экрана (редактирование или просмотр результата)
+        let isEditMode = true; 
         const vowels = "аеёиоуыэюяАЕЁИОУЫЭЮЯ"; 
 
         // --- Юмор и Комментарии ---
@@ -436,7 +420,6 @@
             light: ["⚪ Добрый Светофорчик", "🌞 Стихотворный Рассвет", "🦋 Муза в Полете", "🧚‍♂️ Фея Гармонии"]
         };
 
-        // --- Вспомогательные функции ---
         function getRandomElement(arr) {
             return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : "";
         }
@@ -462,7 +445,6 @@
             hapticFeedback('medium');
             
             if (isEditMode) {
-                // ПЕРЕХОД В РЕЖИМ РЕЗУЛЬТАТА
                 const text = textArea.value;
                 if (!text.trim()) {
                     tg.showAlert ? tg.showAlert("Сначала напишите что-нибудь!") : alert("Сначала напишите что-нибудь!");
@@ -494,7 +476,6 @@
                 isEditMode = false;
 
             } else {
-                // ПЕРЕХОД В РЕЖИМ РЕДАКТИРОВАНИЯ
                 textArea.style.display = 'block';
                 resultDisplay.style.display = 'none';
                 resetTrafficLights();
@@ -565,69 +546,56 @@
         function clearFields() {
             hapticFeedback('light');
             textArea.value = "";
-            if (!isEditMode) toggleMode(); // Возвращаем в режим редактирования
+            if (!isEditMode) toggleMode(); 
             resetTrafficLights();
         }
 
-        // --- НАДЕЖНОЕ СОХРАНЕНИЕ (Telegram CloudStorage + LocalStorage) ---
+        // --- НАДЕЖНОЕ СОХРАНЕНИЕ (Локальное хранилище) ---
         const STORAGE_KEY = "savedPoems";
-        const MAX_POEMS = 15; // Ограничение для CloudStorage, чтобы не превысить лимит ТГ
+        const MAX_POEMS = 15; 
 
         function savePoem() {
             hapticFeedback('success');
             const poem = textArea.value.trim();
+            
             if (!poem) {
                 tg.showAlert ? tg.showAlert("Нечего сохранять — поле пустое!") : alert("Нечего сохранять!");
                 return;
             }
 
-            // Функция сохранения массива
-            const performSave = (poemsArray) => {
-                poemsArray.unshift(poem);
-                if (poemsArray.length > MAX_POEMS) poemsArray = poemsArray.slice(0, MAX_POEMS); // Обрезаем старые
+            try {
+                let poems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
                 
-                const dataString = JSON.stringify(poemsArray);
-
-                if (tg.CloudStorage) {
-                    tg.CloudStorage.setItem(STORAGE_KEY, dataString, (err, success) => {
-                        if (success) {
-                            trafficLightCommentDiv.textContent = "Стих надежно спрятан в облаке ТГ! ☁️🗄️";
-                            renderSavedPoems(poemsArray);
-                        } else {
-                            fallbackLocalSave(poemsArray); // Если облако отвалилось
-                        }
-                    });
-                } else {
-                    fallbackLocalSave(poemsArray);
+                // Проверка на дубликаты
+                if (poems.includes(poem)) {
+                    trafficLightCommentDiv.textContent = "Этот стих уже есть в архиве! 🗄️";
+                    return;
                 }
-            };
 
-            // Читаем текущие перед сохранением
-            if (tg.CloudStorage) {
-                tg.CloudStorage.getItem(STORAGE_KEY, (err, value) => {
-                    let currentPoems = value ? JSON.parse(value) : [];
-                    performSave(currentPoems);
-                });
-            } else {
-                let currentPoems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-                performSave(currentPoems);
+                poems.unshift(poem);
+                if (poems.length > MAX_POEMS) poems = poems.slice(0, MAX_POEMS);
+
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(poems));
+                trafficLightCommentDiv.textContent = "Стих успешно сохранен в архив! 🗄️✍️";
+                loadSavedPoems();
+                
+                setTimeout(() => {
+                    if(isEditMode) resetTrafficLights();
+                }, 2000);
+
+            } catch (e) {
+                console.error("Ошибка сохранения:", e);
+                trafficLightCommentDiv.textContent = "Ошибка при сохранении! ❌";
             }
         }
 
-        function fallbackLocalSave(poemsArray) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(poemsArray));
-            trafficLightCommentDiv.textContent = "Стих в локальном архиве! 🗄️";
-            renderSavedPoems(poemsArray);
-        }
-
         function loadSavedPoems() {
-            if (tg.CloudStorage) {
-                tg.CloudStorage.getItem(STORAGE_KEY, (err, value) => {
-                    if (!err && value) renderSavedPoems(JSON.parse(value));
-                    else renderSavedPoems(JSON.parse(localStorage.getItem(STORAGE_KEY)) || []); // Fallback
-                });
-            } else {
-                renderSavedPoems(JSON.parse(localStorage.getItem(STORAGE_KEY)) || []);
+            try {
+                const poems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+                renderSavedPoems(poems);
+            } catch (e) {
+                console.error("Ошибка загрузки:", e);
+                renderSavedPoems([]);
             }
         }
 
@@ -647,65 +615,42 @@
 
         window.loadPoem = function(index) {
             hapticFeedback('light');
-            const loadAction = (poems) => {
-                if (poems[index]) {
-                    textArea.value = poems[index];
-                    if (!isEditMode) toggleMode(); // Переключаем в редактор
-                    setTimeout(toggleMode, 100); // И сразу запускаем подсчет
-                }
-            };
-
-            if (tg.CloudStorage) {
-                tg.CloudStorage.getItem(STORAGE_KEY, (err, val) => loadAction(val ? JSON.parse(val) : []));
-            } else {
-                loadAction(JSON.parse(localStorage.getItem(STORAGE_KEY)) || []);
+            let poems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            if (poems[index]) {
+                textArea.value = poems[index];
+                if (!isEditMode) toggleMode(); // Возвращаем в режим редактора, чтобы пользователь сам нажал "Поехали"
             }
         }
 
         window.deletePoem = function(index) {
             hapticFeedback('warning');
-            const ask = tg.showConfirm ? tg.showConfirm : confirm;
-            
-            const executeDelete = (poems) => {
+            const executeDelete = () => {
+                let poems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
                 poems.splice(index, 1);
-                const dataString = JSON.stringify(poems);
-                if (tg.CloudStorage) {
-                    tg.CloudStorage.setItem(STORAGE_KEY, dataString, () => renderSavedPoems(poems));
-                } else {
-                    localStorage.setItem(STORAGE_KEY, dataString);
-                    renderSavedPoems(poems);
-                }
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(poems));
+                loadSavedPoems();
             };
 
             if (tg.showConfirm) {
                 tg.showConfirm("Удалить это стихотворение из архива?", (res) => {
-                    if(res) fetchAndDelete();
+                    if(res) executeDelete();
                 });
             } else {
-                if(confirm("Удалить это стихотворение из архива?")) fetchAndDelete();
-            }
-
-            function fetchAndDelete() {
-                if (tg.CloudStorage) {
-                    tg.CloudStorage.getItem(STORAGE_KEY, (err, val) => executeDelete(val ? JSON.parse(val) : []));
-                } else {
-                    executeDelete(JSON.parse(localStorage.getItem(STORAGE_KEY)) || []);
-                }
+                if(confirm("Удалить это стихотворение из архива?")) executeDelete();
             }
         }
 
-        // --- Переключение тем вручную (по клику на светофор) ---
+        // --- Переключение тем вручную ---
         document.getElementById('trafficLightContainer').addEventListener('click', () => {
             hapticFeedback('rigid');
             document.body.classList.toggle('dark-theme');
             document.body.classList.toggle('light-theme');
             updateUIForTheme();
             
-            // Мигание светофора
             lightRed.classList.add('active'); lightYellow.classList.add('active'); lightGreen.classList.add('active');
             setTimeout(() => {
                 if (!isEditMode) {
-                    isEditMode = true; // Хак для принудительного пересчета
+                    isEditMode = true; 
                     toggleMode();
                 } else {
                     resetTrafficLights();
@@ -717,17 +662,14 @@
             const isDark = document.body.classList.contains('dark-theme');
             const theme = isDark ? 'dark' : 'light';
             
-            // Заголовок
             mainPageTitleElement.style.opacity = 0;
             setTimeout(() => {
                 mainPageTitleElement.textContent = getRandomElement(dynamicTitles[theme]);
                 mainPageTitleElement.style.opacity = 1;
             }, 150);
 
-            // Плейсхолдер
             textArea.placeholder = getRandomElement(PLACEHOLDERS[theme]);
 
-            // Кнопки
             clearButton.textContent = isDark ? "В ТОПКУ 🔥" : "Очистить 🗑️";
             saveButton.textContent = isDark ? "В АРХИВ 🗄️" : "Сохранить 💾";
             if (isEditMode) {
