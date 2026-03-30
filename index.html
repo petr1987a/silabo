@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>Поэтический помощник</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --surface: #1a1a1a;
+            --surface2: #242424;
+            --surface3: #2e2e2e;
+            --text: #e8e8e8;
+            --text2: #999;
+            --text3: #666;
+            --accent: #7c6aef;
+            --accent2: #9d8cf0;
+            --accent-bg: rgba(124,106,239,0.12);
+            --green: #34d399;
+            --green-bg: rgba(52,211,153,0.12);
+            --yellow: #fbbf24;
+            --yellow-bg: rgba(251,191,36,0.12);
+            --red: #f87171;
+            --red-bg: rgba(248,113,113,0.12);
+            --radius: 14px;
+            --radius-sm: 10px;
+            --shadow: 0 2px 20px rgba(0,0,0,0.3);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        body.tg-mode {
+            --bg: var(--tg-theme-bg-color, #0f0f0f);
+            --surface: var(--tg-theme-secondary-bg-color, #1a1a1a);
+            --text: var(--tg-theme-text-color, #e8e8e8);
+            --text2: var(--tg-theme-hint-color, #999);
+            --accent: var(--tg-theme-button-color, #7c6aef);
+        }
+
+        /* ═══ Скроллбар ═══ */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+        /* ═══ Шапка ═══ */
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .header-sub {
+            font-size: 11px;
+            color: var(--text2);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: var(--surface2);
+            color: var(--text2);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .icon-btn:hover { background: var(--surface3); color: var(--text); }
+        .icon-btn:active { transform: scale(0.92); }
+
+        /* ═══ Основной контент ═══ */
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ═══ Карточки ═══ */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid rgba(255,255,255,0.05);
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-body { padding: 14px; }
+        .card-body.no-pad { padding: 0; }
+
+        /* ═══ Светофор + статус ═══ */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px;
+        }
+
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--surface2);
+            border-radius: 20px;
+        }
+
+        .light {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--surface3);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .light.on {
+            box-shadow: 0 0 8px currentColor, 0 0 20px currentColor;
+        }
+
+        .light.on.pulse {
+            animation: lightPulse 2.5s ease-in-out infinite;
+        }
+
+        .light-r { color: var(--red); }
+        .light-r.on { background: var(--red); }
+        .light-y { color: var(--yellow); }
+        .light-y.on { background: var(--yellow); }
+        .light-g { color: var(--green); }
+        .light-g.on { background: var(--green); }
+
+        @keyframes lightPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .status-text {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text2);
+            line-height: 1.4;
+        }
+
+        .status-text strong {
+            color: var(--text);
+            display: block;
+            font-size: 14px;
+        }
+
+        /* ═══ Редактор ═══ */
+        .editor-container {
+            position: relative;
+        }
+
+        .editor-numbers {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 32px;
+            padding: 12px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+            color: var(--text3);
+            user-select: none;
+            pointer-events: none;
+            line-height: 1.7;
+            overflow: hidden;
+        }
+
+        .line-num {
+            height: 23.8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .line-num.active { color: var(--accent); }
+        .line-num.bad { color: var(--red); }
+        .line-num.warn { color: var(--yellow); }
+        .line-num.good { color: var(--green); }
+
+        textarea {
+            width: 100%;
+            min-height: 180px;
+            background: transparent;
+            color: var(--text);
+            border: none;
+            padding: 12px 12px 12px 36px;
+            outline: none;
+            resize: none;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 15px;
+            line-height: 1.7;
+            overflow-y: auto;
+        }
+
+        textarea::placeholder {
+            color: var(--text3);
+            font-style: italic;
+        }
+
+        .editor-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            font-size: 11px;
+            color: var(--text3);
+        }
+
+        /* ═══ Метрики строк ═══ */
+        .metrics-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 10px 14px;
+            min-height: 36px;
+            align-items: center;
+        }
+
+        .syl-badge {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: 'SF Mono', monospace;
+            font-weight: 600;
+            transition: var(--transition);
+            cursor: default;
+        }
+
+        .syl-badge.good { background: var(--green-bg); color: var(--green); }
+        .syl-badge.warn { background: var(--yellow-bg); color: var(--yellow); }
+        .syl-badge.bad { background: var(--red-bg); color: var(--red); }
+
+        /* ═══ Статистика ═══ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: rgba(255,255,255,0.04);
+        }
+
+        .stat-item {
+            background: var(--surface);
+            padding: 10px 8px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'SF Mono', monospace;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* ═══ Анализ рифмы и ритма ═══ */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: rgba(255,255,255,0.04);
+        }
+
+        .analysis-item {
+            background: var(--surface);
+            padding: 12px;
+        }
+
+        .analysis-label {
+            font-size: 10px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .analysis-value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .analysis-hint {
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 2px;
+        }
+
+        .rhyme-scheme {
+            display: flex;
+            gap: 3px;
+            margin-top: 4px;
+        }
+
+        .rhyme-letter {
+            width: 22px;
+            height: 22px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .rhyme-letter.a { background: rgba(124,106,239,0.2); color: var(--accent2); }
+        .rhyme-letter.b { background: rgba(52,211,153,0.2); color: var(--green); }
+        .rhyme-letter.c { background: rgba(251,191,36,0.2); color: var(--yellow); }
+        .rhyme-letter.d { background: rgba(248,113,113,0.2); color: var(--red); }
+        .rhyme-letter.x { background: rgba(255,255,255,0.05); color: var(--text3); }
+
+        /* ═══ Кнопка анализа (браузер) ═══ */
+        .analyze-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius);
+            background: var(--accent);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .analyze-btn:hover { filter: brightness(1.1); }
+        .analyze-btn:active { transform: scale(0.98); filter: brightness(0.95); }
+        .analyze-btn.tg-hidden { display: none; }
+
+        /* ═══ Словарь ═══ */
+        .dict-input-row {
+            display: flex;
+            gap: 8px;
+            padding: 0 14px 10px;
+        }
+
+        .dict-input {
+            flex: 1;
+            background: var(--surface2);
+            color: var(--text);
+            border: 2px solid transparent;
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            outline: none;
+            font: inherit;
+            transition: var(--transition);
+        }
+
+        .dict-input:focus { border-color: var(--accent); }
+        .dict-input::placeholder { color: var(--text3); }
+
+        .dict-extract-btn {
+            padding: 10px 14px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--accent-bg);
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: var(--transition);
+        }
+
+        .dict-extract-btn:active { transform: scale(0.95); }
+
+        .dict-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: rgba(255,255,255,0.04);
+        }
+
+        .dict-btn {
+            background: var(--surface);
+            border: none;
+            color: var(--text);
+            padding: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dict-btn:active { background: var(--surface2); }
+        .dict-btn .dict-icon { font-size: 16px; }
+        .dict-btn .dict-label { font-size: 11px; color: var(--text3); display: block; }
+
+        /* ═══ Шаблоны ═══ */
+        .templates-scroll {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 0 14px 14px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .templates-scroll::-webkit-scrollbar { display: none; }
+
+        .template-chip {
+            flex-shrink: 0;
+            padding: 8px 14px;
+            border-radius: 20px;
+            background: var(--surface2);
+            border: 1.5px solid transparent;
+            color: var(--text2);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .template-chip:active { transform: scale(0.95); }
+        .template-chip.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-bg);
+        }
+
+        .template-info {
+            padding: 0 14px 12px;
+            font-size: 12px;
+            color: var(--text3);
+            min-height: 20px;
+            transition: var(--transition);
+        }
+
+        /* ═══ Черновики ═══ */
+        .drafts-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .draft-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .draft-item:last-child { border-bottom: none; }
+        .draft-item:active { background: var(--surface2); }
+
+        .draft-preview {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .draft-title {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .draft-meta {
+            font-size: 11px;
+            color: var(--text3);
+        }
+
+        .draft-delete {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--text3);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .draft-delete:hover { background: var(--red-bg); color: var(--red); }
+
+        .drafts-empty {
+            padding: 20px;
+            text-align: center;
+            color: var(--text3);
+            font-size: 13px;
+        }
+
+        /* ═══ Утилиты внизу ═══ */
+        .util-row {
+            display: flex;
+            gap: 6px;
+            padding: 0 14px 14px;
+        }
+
+        .util-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text2);
+            font-size: 11px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .util-btn:active { background: var(--surface2); transform: scale(0.97); }
+
+        /* ═══ Модалка ═══ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 480px;
+            max-height: 70vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        .modal-overlay.show .modal {
+            transform: translateY(0);
+        }
+
+        .modal-handle {
+            width: 36px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--surface3);
+            margin: 8px auto;
+        }
+
+        .modal-header {
+            padding: 4px 16px 12px;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        /* ═══ Анимации ═══ */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-up { animation: fadeUp 0.4s ease-out; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-5px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+
+        /* ═══ Адаптивность ═══ */
+        @media (min-width: 480px) {
+            .main { padding: 16px; gap: 16px; max-width: 560px; margin: 0 auto; width: 100%; }
+            textarea { min-height: 220px; }
+        }
+
+        /* ═══ Тост-уведомления ═══ */
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-60px);
+            background: var(--surface2);
+            color: var(--text);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 2000;
+            box-shadow: var(--shadow);
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ═══ Секция "свернуть" ═══ */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .collapsible-header .arrow {
+            transition: transform 0.3s;
+            font-size: 12px;
+            color: var(--text3);
+        }
+
+        .collapsible-header.open .arrow {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease;
+        }
+
+        .collapsible-body.open {
+            max-height: 800px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Шапка -->
+    <div class="header">
+        <div class="header-left">
+            <span class="logo">🪶</span>
+            <div>
+                <div class="header-title">Поэт</div>
+                <div class="header-sub">стихотворный помощник</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="toggleDrafts()" title="Черновики">📂</button>
+            <button class="icon-btn" onclick="toggleSettings()" title="Настройки">⚙️</button>
+        </div>
+    </div>
+
+    <!-- Контент -->
+    <div class="main">
+
+        <!-- Статус-бар -->
+        <div class="card">
+            <div class="status-bar">
+                <div class="traffic-lights">
+                    <div class="light light-r" id="light-r"></div>
+                    <div class="light light-y" id="light-y"></div>
+                    <div class="light light-g" id="light-g"></div>
+                </div>
+                <div class="status-text" id="status">
+                    <strong>Готов к работе</strong>
+                    Напиши стих и нажми «Анализ»
+                </div>
+            </div>
+        </div>
+
+        <!-- Редактор -->
+        <div class="card">
+            <div class="card-header collapsible-header open" onclick="toggleSection(this, 'editor-body')">
+                <div class="card-title">✍️ Редактор</div>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="collapsible-body open" id="editor-body">
+                <div class="editor-container">
+                    <div class="editor-numbers" id="line-nums"></div>
+                    <textarea
+                        id="editor"
+                        placeholder="Напиши стихи здесь...
+
+Каждая строка будет проанализирована
+на количество слогов и рифмовку"
+                        spellcheck="true"
+                    ></textarea>
+                </div>
+                <div class="editor-footer">
+                    <span id="char-info">0 символов</span>
+                    <span id="autosave-status"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопка анализа (для браузера) -->
+        <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
+            📊 Анализировать
+        </button>
+
+        <!-- Метрики слогов -->
+        <div class="card" id="metrics-card" style="display:none">
+            <div class="card-header">
+                <div class="card-title">📐 Слоги по строкам</div>
+            </div>
+            <div class="metrics-row" id="metrics-row"></div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="card" id="stats-card" style="display:none">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-val" id="s-lines">0</div>
+                    <div class="stat-label">Строк</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val" id="s-words">0</div>
+                    <div class="stat-label">Слов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val" id="s-syl">0</div>
+                    <div class="stat-label">Слогов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val" id="s-chars">0</div>
+                    <div class="stat-label">Букв</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Анализ рифмы и ритма -->
+        <div class="card" id="analysis-card" style="display:none">
+            <div class="analysis-grid">
+                <div class="analysis-item">
+                    <div class="analysis-label">Рифмовка</div>
+                    <div class="analysis-value" id="a-rhyme">—</div>
+                    <div class="rhyme-scheme" id="a-rhyme-scheme"></div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-label">Ритм</div>
+                    <div class="analysis-value" id="a-rhythm">—</div>
+                    <div class="analysis-hint" id="a-rhythm-hint"></div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-label">Слогов / строку</div>
+                    <div class="analysis-value" id="a-avg">—</div>
+                    <div class="analysis-hint" id="a-spread"></div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-label">Рифм найдено</div>
+                    <div class="analysis-value" id="a-rhyme-count">—</div>
+                    <div class="analysis-hint" id="a-rhyme-quality"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Шаблоны -->
+        <div class="card">
+            <div class="card-header collapsible-header" onclick="toggleSection(this, 'templates-body')">
+                <div class="card-title">📐 Формы стихов</div>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="collapsible-body" id="templates-body">
+                <div class="templates-scroll" id="templates-scroll"></div>
+                <div class="template-info" id="template-info"></div>
+            </div>
+        </div>
+
+        <!-- Словарь -->
+        <div class="card">
+            <div class="card-header collapsible-header" onclick="toggleSection(this, 'dict-body')">
+                <div class="card-title">📖 Словарь</div>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="collapsible-body" id="dict-body">
+                <div class="dict-input-row">
+                    <input class="dict-input" id="dict-word" placeholder="Введи слово..." autocomplete="off">
+                    <button class="dict-extract-btn" onclick="extractLastWord()">← Из стиха</button>
+                </div>
+                <div class="dict-grid">
+                    <button class="dict-btn" onclick="dictLookup('syn')">
+                        <span class="dict-icon">🔄</span>
+                        <div><span>Синонимы</span><span class="dict-label">sinonim.org</span></div>
+                    </button>
+                    <button class="dict-btn" onclick="dictLookup('rhyme')">
+                        <span class="dict-icon">🎵</span>
+                        <div><span>Рифмы</span><span class="dict-label">rifme.net</span></div>
+                    </button>
+                    <button class="dict-btn" onclick="dictLookup('meaning')">
+                        <span class="dict-icon">📚</span>
+                        <div><span>Значение</span><span class="dict-label">wiktionary</span></div>
+                    </button>
+                    <button class="dict-btn" onclick="dictLookup('ant')">
+                        <span class="dict-icon">↔️</span>
+                        <div><span>Антонимы</span><span class="dict-label">sinonim.org</span></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Утилиты -->
+        <div class="card">
+            <div class="util-row" style="padding-top:14px">
+                <button class="util-btn" onclick="copyText()">📋 Копировать</button>
+                <button class="util-btn" onclick="clearAll()">🗑 Очистить</button>
+                <button class="util-btn" onclick="saveDraft()">💾 Сохранить</button>
+                <button class="util-btn" onclick="shareText()">📤 Отправить</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Тост -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Модалка черновиков -->
+    <div class="modal-overlay" id="drafts-modal" onclick="closeDraftsModal(event)">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <div class="modal-header">📂 Черновики</div>
+            <div class="drafts-list" id="drafts-list"></div>
+        </div>
+    </div>
+
+<script>
+// ═══════════════════════════════════════════
+//  ИНИЦИАЛИЗАЦИЯ
+// ═══════════════════════════════════════════
+
+let isTg = false;
+let tg = null;
+let haptic = null;
+let activeTemplate = null;
+
+try {
+    tg = window.Telegram?.WebApp;
+    if (tg && tg.initData) {
+        isTg = true;
+        document.body.classList.add('tg-mode');
+        tg.expand();
+        tg.ready();
+        tg.MainButton.setText('📊 АНАЛИЗ');
+        tg.MainButton.show();
+        tg.MainButton.onClick(analyze);
+        document.getElementById('analyze-btn').classList.add('tg-hidden');
+        haptic = tg.HapticFeedback;
+    }
+} catch(e) {}
+
+function doHaptic(type, val) {
+    try {
+        if (!haptic) return;
+        if (type === 'impact') haptic.impactOccurred(val || 'medium');
+        if (type === 'notify') haptic.notificationOccurred(val || 'success');
+    } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
+//  ЭЛЕМЕНТЫ
+// ═══════════════════════════════════════════
+
+const editor = document.getElementById('editor');
+const lineNums = document.getElementById('line-nums');
+const charInfo = document.getElementById('char-info');
+const metricsCard = document.getElementById('metrics-card');
+const metricsRow = document.getElementById('metrics-row');
+const statsCard = document.getElementById('stats-card');
+const analysisCard = document.getElementById('analysis-card');
+const statusEl = document.getElementById('status');
+
+const VOWELS = /[аеёиоуыэюя]/gi;
+
+// ═══════════════════════════════════════════
+//  ШАБЛОНЫ
+// ═══════════════════════════════════════════
+
+const TEMPLATES = {
+    free: { name: '🌊 Свободный', desc: 'Без ограничений по форме', lines: null, syllables: null },
+    quatrain: { name: '📜 Четверостишие', desc: '4 строки, схема ABAB', lines: 4, syllables: null, scheme: 'ABAB' },
+    haiku: { name: '🌸 Хайку', desc: '3 строки: 5-7-5 слогов', lines: 3, syllables: [5, 7, 5] },
+    tanka: { name: '🎋 Танка', desc: '5 строк: 5-7-5-7-7 слогов', lines: 5, syllables: [5, 7, 5, 7, 7] },
+    limerick: { name: '😄 Лимерик', desc: '5 строк: AABBA, 8-8-5-5-8 слогов', lines: 5, syllables: [8, 8, 5, 5, 8], scheme: 'AABBA' },
+    sonnet: { name: '🏛 Сонет', desc: '14 строк, 10-11 слогов, ABAB CDCD EFEF GG', lines: 14, syllables: 10, scheme: 'ABABCDCDEFGG' },
+    sixain: { name: '🎭 Секстина', desc: '6 строк, схема AABCCB', lines: 6, syllables: null, scheme: 'AABCCB' },
+    octave: { name: '🎶 Октава', desc: '8 строк, схема ABABABCC', lines: 8, syllables: 11, scheme: 'ABABABCC' },
+};
+
+function renderTemplates() {
+    const container = document.getElementById('templates-scroll');
+    container.innerHTML = Object.entries(TEMPLATES).map(([key, t]) =>
+        `<button class="template-chip${activeTemplate === key ? ' active' : ''}" onclick="selectTemplate('${key}')">${t.name}</button>`
+    ).join('');
+}
+
+function selectTemplate(key) {
+    if (activeTemplate === key) {
+        activeTemplate = null;
+        document.getElementById('template-info').textContent = '';
+    } else {
+        activeTemplate = key;
+        const t = TEMPLATES[key];
+        document.getElementById('template-info').textContent = t.desc;
+        doHaptic('impact', 'light');
+    }
+    renderTemplates();
+}
+
+renderTemplates();
+
+// ═══════════════════════════════════════════
+//  НУМЕРАЦИЯ СТРОК + ПОДСЧЁТ
+// ═══════════════════════════════════════════
+
+function updateLineNumbers() {
+    const text = editor.value;
+    const lines = text.split('\n');
+    const count = lines.length;
+
+    let html = '';
+    for (let i = 0; i < count; i++) {
+        html += `<div class="line-num" id="ln-${i}">${i + 1}</div>`;
+    }
+    lineNums.innerHTML = html;
+
+    const chars = text.length;
+    const words = text.trim() ? text.trim().split(/\s+/).filter(w => w.match(/[а-яёa-z]/i)).length : 0;
+    charInfo.textContent = `${chars} симв · ${words} слов`;
+}
+
+editor.addEventListener('input', () => {
+    updateLineNumbers();
+    scheduleAutoSave();
+});
+
+editor.addEventListener('scroll', () => {
+    lineNums.scrollTop = editor.scrollTop;
+});
+
+updateLineNumbers();
+
+// ═══════════════════════════════════════════
+//  АНАЛИЗ — ГЛАВНАЯ ФУНКЦИЯ
+// ═══════════════════════════════════════════
+
+function analyze() {
+    const text = editor.value.trim();
+
+    if (!text) {
+        doHaptic('notify', 'warning');
+        setStatus('warning', 'Пусто!', 'Напиши хотя бы одну строчку');
+        shakeEl(statusEl);
+        return;
+    }
+
+    const lines = text.split('\n').filter(s => s.trim());
+    const syllables = lines.map(s => countVowels(s));
+    const totalSyl = syllables.reduce((a, b) => a + b, 0);
+    const words = text.split(/\s+/).filter(w => w.match(/[а-яёa-z]/i)).length;
+    const chars = text.replace(/[^а-яёa-z]/gi, '').length;
+
+    if (syllables.length === 0) {
+        doHaptic('notify', 'warning');
+        setStatus('warning', 'Нет текста', 'Нужен хотя бы один слог');
+        return;
+    }
+
+    // Статистика
+    statsCard.style.display = '';
+    statsCard.classList.add('fade-up');
+    document.getElementById('s-lines').textContent = lines.length;
+    document.getElementById('s-words').textContent = words;
+    document.getElementById('s-syl').textContent = totalSyl;
+    document.getElementById('s-chars').textContent = chars;
+
+    // Метрики
+    const max = Math.max(...syllables);
+    const min = Math.min(...syllables);
+    const diff = max - min;
+    const avg = totalSyl / syllables.length;
+
+    metricsCard.style.display = '';
+    metricsCard.classList.add('fade-up');
+    metricsRow.innerHTML = syllables.map((n, i) => {
+        const dev = Math.abs(n - avg);
+        let cls = 'good';
+        if (dev >= 2.5) cls = 'bad';
+        else if (dev >= 1) cls = 'warn';
+        return `<span class="syl-badge ${cls}" title="Строка ${i+1}: ${n} слогов">${i+1}:${n}</span>`;
+    }).join('');
+
+    // Подсвечиваем номера строк
+    syllables.forEach((n, i) => {
+        const el = document.getElementById(`ln-${i}`);
+        if (!el) return;
+        el.className = 'line-num';
+        const dev = Math.abs(n - avg);
+        if (dev >= 2.5) el.classList.add('bad');
+        else if (dev >= 1) el.classList.add('warn');
+        else el.classList.add('good');
+    });
+
+    // Анализ рифмы
+    const rhymeResult = analyzeRhyme(lines);
+
+    // Анализ ритма
+    const rhythmResult = analyzeRhythm(syllables);
+
+    // Показываем карточку анализа
+    analysisCard.style.display = '';
+    analysisCard.classList.add('fade-up');
+
+    document.getElementById('a-rhyme').textContent = rhymeResult.name;
+    const schemeEl = document.getElementById('a-rhyme-scheme');
+    schemeEl.innerHTML = rhymeResult.letters.map(l => {
+        const cls = l === '?' ? 'x' : String.fromCharCode(97 + (l.charCodeAt(0) - 65) % 4);
+        return `<span class="rhyme-letter ${cls}">${l}</span>`;
+    }).join('');
+
+    document.getElementById('a-rhythm').textContent = rhythmResult.name;
+    document.getElementById('a-rhythm-hint').textContent = rhythmResult.hint;
+
+    document.getElementById('a-avg').textContent = avg.toFixed(1);
+    document.getElementById('a-spread').textContent = diff === 0 ? 'Идеально ровно' : `Разброс: ${min}–${max}`;
+
+    document.getElementById('a-rhyme-count').textContent = rhymeResult.pairsCount;
+    document.getElementById('a-rhyme-quality').textContent = rhymeResult.quality;
+
+    // Проверка шаблона
+    let templateNote = '';
+    if (activeTemplate && TEMPLATES[activeTemplate]) {
+        templateNote = checkTemplate(syllables, lines);
+    }
+
+    // Светофор
+    clearLights();
+    let grade;
+    if (syllables.length < 2) {
+        grade = 'y';
+    } else if (diff === 0 && rhymeResult.pairsCount > 0) {
+        grade = 'g';
+    } else if (diff <= 2) {
+        grade = rhymeResult.pairsCount > 0 ? 'g' : 'y';
+    } else if (diff <= 4) {
+        grade = 'y';
+    } else {
+        grade = 'r';
+    }
+
+    const light = document.getElementById(`light-${grade}`);
+    light.classList.add('on', 'pulse');
+
+    const gradeMessages = {
+        g: ['Отлично! 🎯', `Ритм ровный, ${rhymeResult.name.toLowerCase()}${templateNote}`],
+        y: ['Неплохо 👍', `Небольшой разброс слогов (${min}–${max})${templateNote}`],
+        r: ['Ритм сбит ⚡', `Сильный разброс: ${min}–${max} слогов${templateNote}`]
+    };
+
+    setStatus(grade === 'g' ? 'success' : grade === 'y' ? 'warning' : 'error',
+        gradeMessages[grade][0], gradeMessages[grade][1]);
+
+    doHaptic('notify', grade === 'g' ? 'success' : grade === 'y' ? 'warning' : 'error');
+
+    // Очистка анимаций
+    setTimeout(() => {
+        document.querySelectorAll('.fade-up').forEach(el => el.classList.remove('fade-up'));
+    }, 500);
+}
+
+// ═══════════════════════════════════════════
+//  ПОДСЧЁТ ГЛАСНЫХ
+// ═══════════════════════════════════════════
+
+function countVowels(str) {
+    return (str.match(VOWELS) || []).length;
+}
+
+// ═══════════════════════════════════════════
+//  АНАЛИЗ РИФМЫ
+// ═══════════════════════════════════════════
+
+function getEnding(line) {
+    const clean = line.trim().replace(/[.,!?;:…—–\-»"'()]+$/, '');
+    const words = clean.split(/\s+/);
+    const last = (words[words.length - 1] || '').toLowerCase();
+    if (!last) return '';
+
+    const vowelChars = 'аеёиоуыэюя';
+    let lastVowelIdx = -1;
+    for (let i = last.length - 1; i >= 0; i--) {
+        if (vowelChars.includes(last[i])) {
+            lastVowelIdx = i;
+            break;
+        }
+    }
+
+    if (lastVowelIdx === -1) return last.slice(-2);
+    return last.substring(lastVowelIdx);
+}
+
+function rhymesMatch(a, b) {
+    if (!a || !b || a.length < 2 || b.length < 2) return false;
+    if (a === b) return true;
+
+    const minLen = Math.min(a.length, b.length);
+    const compareLen = Math.min(minLen, 3);
+    const endA = a.slice(-compareLen);
+    const endB = b.slice(-compareLen);
+
+    if (endA === endB) return true;
+
+    // Мягкое совпадение
+    if (a.slice(-2) === b.slice(-2)) return true;
+
+    // Гласная + согласные совпадают
+    const softA = a.replace(/[ьъ]/g, '');
+    const softB = b.replace(/[ьъ]/g, '');
+    if (softA.slice(-2) === softB.slice(-2)) return true;
+
+    return false;
+}
+
+function analyzeRhyme(lines) {
+    const endings = lines.map(l => getEnding(l));
+    const n = endings.length;
+
+    if (n < 2) {
+        return { name: 'Нет', letters: [], pairsCount: 0, quality: 'Нужно ≥2 строк' };
+    }
+
+    // Назначаем буквы
+    const letters = [];
+    const groups = [];
+
+    for (let i = 0; i < n; i++) {
+        let found = false;
+        for (let g = 0; g < groups.length; g++) {
+            if (rhymesMatch(endings[i], endings[groups[g][0]])) {
+                groups[g].push(i);
+                letters[i] = String.fromCharCode(65 + g);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            groups.push([i]);
+            letters[i] = String.fromCharCode(65 + groups.length - 1);
+        }
+    }
+
+    // Подсчёт рифмующихся пар
+    let pairsCount = 0;
+    groups.forEach(g => {
+        if (g.length >= 2) pairsCount += g.length * (g.length - 1) / 2;
+    });
+
+    // Определяем тип схемы
+    const scheme = letters.join('');
+    let name = 'Нестандартная';
+    let quality = '';
+
+    if (n >= 4) {
+        const first4 = scheme.substring(0, 4);
+        if (first4 === 'ABAB') { name = 'Перекрёстная'; quality = 'Классика'; }
+        else if (first4 === 'AABB') { name = 'Парная'; quality = 'Классика'; }
+        else if (first4 === 'ABBA') { name = 'Кольцевая'; quality = 'Сложная форма'; }
+        else if (pairsCount === 0) { name = 'Белый стих'; quality = 'Без рифмы'; }
+    } else if (n === 2) {
+        name = rhymesMatch(endings[0], endings[1]) ? 'Рифма найдена' : 'Нет рифмы';
+    } else if (n === 3) {
+        if (rhymesMatch(endings[0], endings[2])) name = 'ABA';
+        else if (rhymesMatch(endings[0], endings[1])) name = 'AAB';
+    }
+
+    if (!quality) {
+        if (pairsCount >= n / 2) quality = 'Хорошо';
+        else if (pairsCount > 0) quality = 'Частичная';
+        else quality = 'Отсутствует';
+    }
+
+    // Заменяем одинокие буквы на ?
+    const finalLetters = letters.map((l, i) => {
+        const group = groups.find(g => g.includes(i));
+        return group && group.length >= 2 ? l : '?';
+    });
+
+    return { name, letters: finalLetters, pairsCount, quality, scheme };
+}
+
+// ═══════════════════════════════════════════
+//  АНАЛИЗ РИТМА
+// ═══════════════════════════════════════════
+
+function analyzeRhythm(syllables) {
+    if (syllables.length < 2) {
+        return { name: 'Мало данных', hint: 'Нужно ≥2 строк' };
+    }
+
+    const max = Math.max(...syllables);
+    const min = Math.min(...syllables);
+    const diff = max - min;
+    const avg = syllables.reduce((a, b) => a + b, 0) / syllables.length;
+
+    if (diff === 0) {
+        return { name: 'Равномерный', hint: `${syllables[0]} слогов в каждой строке` };
+    }
+
+    // Проверяем чередование
+    if (syllables.length >= 4) {
+        const even = syllables.filter((_, i) => i % 2 === 0);
+        const odd = syllables.filter((_, i) => i % 2 === 1);
+        const evenDiff = Math.max(...even) - Math.min(...even);
+        const oddDiff = Math.max(...odd) - Math.min(...odd);
+
+        if (evenDiff <= 1 && oddDiff <= 1 && Math.abs(even[0] - odd[0]) >= 2) {
+            return {
+                name: 'Чередование',
+                hint: `≈${Math.round(even.reduce((a,b)=>a+b,0)/even.length)} / ${Math.round(odd.reduce((a,b)=>a+b,0)/odd.length)} слогов`
+            };
+        }
+    }
+
+    if (diff <= 1) return { name: 'Почти ровный', hint: `≈${avg.toFixed(0)} слогов ±1` };
+    if (diff <= 3) return { name: 'Колеблется', hint: `${min}–${max} слогов` };
+    return { name: 'Неровный', hint: `Разброс ${diff} слогов` };
+}
+
+// ═══════════════════════════════════════════
+//  ПРОВЕРКА ШАБЛОНА
+// ═══════════════════════════════════════════
+
+function checkTemplate(syllables, lines) {
+    const t = TEMPLATES[activeTemplate];
+    if (!t) return '';
+
+    const issues = [];
+
+    if (t.lines && lines.length !== t.lines) {
+        issues.push(`нужно ${t.lines} строк (есть ${lines.length})`);
+    }
+
+    if (t.syllables) {
+        const expected = Array.isArray(t.syllables)
+            ? t.syllables
+            : Array(lines.length).fill(t.syllables);
+
+        let mismatches = 0;
+        syllables.forEach((s, i) => {
+            if (expected[i] !== undefined && Math.abs(s - expected[i]) > 1) mismatches++;
+        });
+
+        if (mismatches > 0) issues.push(`${mismatches} строк не по размеру`);
+    }
+
+    if (issues.length === 0) return ` · ✅ ${t.name} — идеально!`;
+    return ` · ⚠️ ${t.name}: ${issues.join(', ')}`;
+}
+
+// ═══════════════════════════════════════════
+//  СВЕТОФОР И СТАТУС
+// ═══════════════════════════════════════════
+
+function clearLights() {
+    document.querySelectorAll('.light').forEach(el => {
+        el.classList.remove('on', 'pulse');
+    });
+}
+
+function setStatus(type, title, sub) {
+    statusEl.innerHTML = `<strong>${title}</strong>${sub || ''}`;
+}
+
+function shakeEl(el) {
+    el.style.animation = 'shake 0.4s ease';
+    setTimeout(() => el.style.animation = '', 400);
+}
+
+// ═══════════════════════════════════════════
+//  СЛОВАРЬ
+// ═══════════════════════════════════════════
+
+function dictLookup(type) {
+    const word = document.getElementById('dict-word').value.trim();
+    if (!word) {
+        doHaptic('impact', 'medium');
+        const inp = document.getElementById('dict-word');
+        inp.style.borderColor = 'var(--red)';
+        shakeEl(inp);
+        setTimeout(() => inp.style.borderColor = 'transparent', 1000);
+        return;
+    }
+
+    doHaptic('impact', 'light');
+
+    const urls = {
+        syn: 'https://sinonim.org/s/',
+        rhyme: 'https://rifme.net/r/',
+        meaning: 'https://ru.wiktionary.org/wiki/',
+        ant: 'https://sinonim.org/a/'
+    };
+
+    const url = urls[type] + encodeURIComponent(word);
+
+    if (isTg) {
+        tg.openLink(url);
+    } else {
+        window.open(url, '_blank');
+    }
+}
+
+function extractLastWord() {
+    const text = editor.value.trim();
+    if (!text) return;
+
+    const lines = text.split('\n').filter(s => s.trim());
+    const lastLine = lines[lines.length - 1];
+    const words = lastLine.trim().split(/\s+/);
+    const lastWord = words[words.length - 1].replace(/[.,!?;:…—–\-»"'()]+$/g, '');
+
+    if (lastWord) {
+        document.getElementById('dict-word').value = lastWord;
+        doHaptic('impact', 'light');
+        showToast(`📝 «${lastWord}»`);
+    }
+}
+
+// ═══════════════════════════════════════════
+//  УТИЛИТЫ
+// ═══════════════════════════════════════════
+
+function copyText() {
+    const text = editor.value;
+    if (!text) { doHaptic('impact', 'light'); return; }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            doHaptic('notify', 'success');
+            showToast('✅ Скопировано');
+        }).catch(fallbackCopy);
+    } else {
+        fallbackCopy();
+    }
+}
+
+function fallbackCopy() {
+    const ta = document.createElement('textarea');
+    ta.value = editor.value;
+    ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showToast('✅ Скопировано'); }
+    catch(e) { showToast('❌ Ошибка копирования'); }
+    document.body.removeChild(ta);
+}
+
+function clearAll() {
+    if (!editor.value) return;
+    doHaptic('impact', 'medium');
+    editor.value = '';
+    updateLineNumbers();
+    metricsCard.style.display = 'none';
+    statsCard.style.display = 'none';
+    analysisCard.style.display = 'none';
+    clearLights();
+    setStatus('', 'Готов к работе', 'Напиши стих и нажми «Анализ»');
+    activeTemplate = null;
+    renderTemplates();
+    document.getElementById('template-info').textContent = '';
+    editor.focus();
+}
+
+function shareText() {
+    const text = editor.value.trim();
+    if (!text) { doHaptic('impact', 'light'); return; }
+
+    if (isTg) {
+        tg.sendData(JSON.stringify({ action: 'share', text }));
+    } else if (navigator.share) {
+        navigator.share({ text }).catch(() => {});
+    } else {
+        copyText();
+        showToast('📋 Текст скопирован для отправки');
+    }
+}
+
+// ═══════════════════════════════════════════
+//  ТОСТ
+// ═══════════════════════════════════════════
+
+let toastTimer;
+function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════
+//  СЕКЦИИ (сворачивание)
+// ═══════════════════════════════════════════
+
+function toggleSection(header, bodyId) {
+    header.classList.toggle('open');
+    document.getElementById(bodyId).classList.toggle('open');
+    doHaptic('impact', 'light');
+}
+
+// ═══════════════════════════════════════════
+//  ЧЕРНОВИКИ
+// ═══════════════════════════════════════════
+
+const DRAFTS_KEY = 'poet_drafts';
+
+function getDrafts() {
+    try { return JSON.parse(localStorage.getItem(DRAFTS_KEY)) || []; }
+    catch { return []; }
+}
+
+function setDrafts(d) {
+    localStorage.setItem(DRAFTS_KEY, JSON.stringify(d));
+}
+
+function saveDraft() {
+    const text = editor.value.trim();
+    if (!text) { doHaptic('impact', 'light'); showToast('⚠️ Нечего сохранять'); return; }
+
+    const drafts = getDrafts();
+    const title = text.split('\n')[0].substring(0, 40) || 'Без названия';
+    const lines = text.split('\n').filter(s => s.trim()).length;
+
+    drafts.unshift({
+        id: Date.now(),
+        text,
+        title,
+        lines,
+        date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    });
+
+    if (drafts.length > 30) drafts.pop();
+    setDrafts(drafts);
+
+    doHaptic('notify', 'success');
+    showToast('💾 Сохранено');
+    document.getElementById('autosave-status').textContent = '💾';
+    setTimeout(() => document.getElementById('autosave-status').textContent = '', 2000);
+}
+
+function loadDraft(id) {
+    const drafts = getDrafts();
+    const draft = drafts.find(d => d.id === id);
+    if (draft) {
+        editor.value = draft.text;
+        updateLineNumbers();
+        closeDraftsModal();
+        doHaptic('impact', 'light');
+        showToast('📝 Загружено');
+        setTimeout(analyze, 200);
+    }
+}
+
+function deleteDraft(id, e) {
+    e.stopPropagation();
+    const drafts = getDrafts().filter(d => d.id !== id);
+    setDrafts(drafts);
+    doHaptic('impact', 'medium');
+    renderDraftsList();
+}
+
+function renderDraftsList() {
+    const drafts = getDrafts();
+    const list = document.getElementById('drafts-list');
+
+    if (!drafts.length) {
+        list.innerHTML = '<div class="drafts-empty">Пока пусто. Нажми 💾 чтобы сохранить.</div>';
+        return;
+    }
+
+    list.innerHTML = drafts.map(d => `
+        <div class="draft-item" onclick="loadDraft(${d.id})">
+            <div class="draft-preview">
+                <div class="draft-title">${escapeHtml(d.title)}</div>
+                <div class="draft-meta">${d.date} · ${d.lines} строк</div>
+            </div>
+            <button class="draft-delete" onclick="deleteDraft(${d.id}, event)" title="Удалить">✕</button>
+        </div>
+    `).join('');
+}
+
+function toggleDrafts() {
+    const modal = document.getElementById('drafts-modal');
+    renderDraftsList();
+    modal.classList.add('show');
+    doHaptic('impact', 'light');
+}
+
+function closeDraftsModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('drafts-modal').classList.remove('show');
+}
+
+function toggleSettings() {
+    showToast('⚙️ Настройки — скоро!');
+    doHaptic('impact', 'light');
+}
+
+// ═══════════════════════════════════════════
+//  АВТОСОХРАНЕНИЕ
+// ═══════════════════════════════════════════
+
+let autoSaveTimer;
+function scheduleAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        const text = editor.value;
+        if (text.trim()) {
+            localStorage.setItem('poet_autosave', text);
+            document.getElementById('autosave-status').textContent = '☁️';
+            setTimeout(() => document.getElementById('autosave-status').textContent = '', 1500);
+        }
+    }, 3000);
+}
+
+// Восстановление
+window.addEventListener('load', () => {
+    const saved = localStorage.getItem('poet_autosave');
+    if (saved && !editor.value) {
+        editor.value = saved;
+        updateLineNumbers();
+    }
+});
+
+// ═══════════════════════════════════════════
+//  КЛАВИАТУРА
+// ═══════════════════════════════════════════
+
+editor.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        analyze();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveDraft();
+    }
+});
+
+// Автоанализ при вставке
+editor.addEventListener('paste', () => {
+    setTimeout(() => {
+        updateLineNumbers();
+        analyze();
+    }, 100);
+});
+
+// ═══════════════════════════════════════════
+//  УТИЛИТЫ
+// ═══════════════════════════════════════════
+
+function escapeHtml(str) {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
+    return str.replace(/[&<>"]/g, c => map[c]);
+}
+</script>
+</body>
+</html>
