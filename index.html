@@ -10,18 +10,17 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
-        /* --- Базовые сбросы для мобильных --- */
+        /* --- Базовые сбросы --- */
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- Основные стили --- */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             margin: 0;
-            padding: 10px; /* Уменьшен padding для мобилок */
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -32,70 +31,22 @@
         .container {
             width: 100%;
             max-width: 900px;
-            margin: 10px auto;
-            padding: 20px;
+            margin: 0 auto;
+            padding: 15px;
             background-color: var(--container-bg);
             border-radius: var(--container-radius);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             transition: background-color 0.3s, box-shadow 0.3s;
         }
 
-        textarea {
-            width: 100%;
-            min-height: 150px;
-            margin-bottom: 15px;
-            padding: 10px;
-            border: 2px solid var(--textarea-border);
-            background-color: var(--textarea-bg);
-            color: var(--textarea-color);
-            border-radius: 5px;
-            font-size: 1rem;
-            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-            resize: vertical;
-        }
-
-        button {
-            padding: 10px 15px;
-            font-size: 1.2rem; /* Чуть уменьшен для мобилок */
-            color: var(--button-text-color);
-            background-color: var(--button-bg);
-            border: 1px solid var(--button-border);
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-        }
-
-        button:hover {
-            background-color: var(--button-hover-bg);
-            color: var(--button-hover-text-color);
-            border-color: var(--button-hover-border);
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: center;
-            gap: 10px; 
-            flex-wrap: wrap;
-            width: 100%;
-            margin: 15px 0;
-        }
-
-        button#clearButton::after,
-        button#saveButton::after {
-            content: " ";
-            white-space: pre;
-        }
-
-        #trafficLightComment {
+        #mainPageTitle {
             text-align: center;
-            margin: 12px auto;
-            padding: 0 15px;
-            max-width: 90%;
-            font-style: italic;
-            color: var(--footer-color);
-            transition: color 0.3s;
+            width: 100%;
+            margin: 5px 0 15px 0;
+            font-size: 1.4rem;
         }
 
+        /* --- Светофор --- */
         .traffic-light-display {
             display: flex;
             justify-content: center;
@@ -113,7 +64,7 @@
         }
 
         .traffic-light-display .light {
-            width: 50px; /* Немного уменьшено для мобилок */
+            width: 50px;
             height: 50px;
             border-radius: 50%;
             margin: 0 8px;
@@ -133,138 +84,114 @@
             background: linear-gradient(145deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.1) 100%);
         }
 
-        @keyframes glow {
-            0% { filter: brightness(1); }
-            50% { filter: brightness(1.2); }
-            100% { filter: brightness(1); }
-        }
+        @keyframes glow { 0% { filter: brightness(1); } 50% { filter: brightness(1.2); } 100% { filter: brightness(1); } }
+        .red-light.active { background: radial-gradient(circle, #ff4444 0%, #cc0000 70%, #8b0000 100%); box-shadow: 0 0 30px #ff000066; animation: glow 1.5s infinite; }
+        .yellow-light.active { background: radial-gradient(circle, #ffff00 0%, #ffd700 70%, #daa520 100%); box-shadow: 0 0 30px #ffff0066; animation: glow 1.8s infinite; }
+        .green-light.active { background: radial-gradient(circle, #00ff00 0%, #00cc00 70%, #008000 100%); box-shadow: 0 0 30px #00ff0066; animation: glow 2s infinite; }
+        
+        .dark-theme .light:not(.active) { background: radial-gradient(circle, #3a3a3a 0%, #2a2a2a 70%, #1a1a1a 100%); }
+        .light-theme .light:not(.active) { background: radial-gradient(circle, #e0e0e0 0%, #c0c0c0 70%, #a0a0a0 100%); }
 
-        .red-light.active {
-            background: radial-gradient(circle, #ff4444 0%, #cc0000 70%, #8b0000 100%);
-            box-shadow: 0 0 30px #ff000066;
-            animation: glow 1.5s infinite;
-        }
-
-        .yellow-light.active {
-            background: radial-gradient(circle, #ffff00 0%, #ffd700 70%, #daa520 100%);
-            box-shadow: 0 0 30px #ffff0066;
-            animation: glow 1.8s infinite;
-        }
-
-        .green-light.active {
-            background: radial-gradient(circle, #00ff00 0%, #00cc00 70%, #008000 100%);
-            box-shadow: 0 0 30px #00ff0066;
-            animation: glow 2s infinite;
-        }
-
-        .light:hover:not(.active) {
-            transform: scale(1.05);
-            cursor: pointer;
-        }
-
-        .dark-theme .light:not(.active) {
-            background: radial-gradient(circle, #3a3a3a 0%, #2a2a2a 70%, #1a1a1a 100%);
-        }
-
-        .light-theme .light:not(.active) {
-            background: radial-gradient(circle, #e0e0e0 0%, #c0c0c0 70%, #a0a0a0 100%);
-        }
-
-        @keyframes power-on {
-            0% { transform: scale(0); opacity: 0; }
-            80% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .light.active {
-            animation: power-on 0.3s ease-out;
-        }
-
-        .light.active::before {
-            content: '';
-            position: absolute;
-            width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
-            animation: sparkle 0.8s linear;
-        }
-
-        @keyframes sparkle {
-            from { transform: scale(0); opacity: 1; }
-            to { transform: scale(2); opacity: 0; }
-        }
-
-        footer {
-            margin-top: 40px;
-            font-style: italic;
+        #trafficLightComment {
             text-align: center;
-            font-size: 0.8em;
-            color: var(--footer-color);
-            transition: color 0.3s;
-        }
-
-        /* Тёмная тема */
-        .dark-theme {
-            --container-bg: #2c2c2c;
-            --container-radius: 8px; /* Сделал небольшое скругление для красоты на мобилках */
-            --textarea-border: #ff5555;
-            --textarea-bg: #111;
-            --textarea-color: #00ff00;
-            --button-text-color: #e0e0e0;
-            --button-bg: #dc3545;
-            --button-border: #a71d2a;
-            --button-hover-bg: #bb2d3b;
-            --button-hover-text-color: #111;
-            --button-hover-border: #8a1a24;
-            --footer-color: #777;
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-        }
-
-        /* Светлая тема */
-        .light-theme {
-            --container-bg: #ffffff;
-            --container-radius: 8px;
-            --textarea-border: #00cc66;
-            --textarea-bg: #f9f9f9;
-            --textarea-color: #333;
-            --button-text-color: #ffffff;
-            --button-bg: #28a745; 
-            --button-border: #1e7e34;
-            --button-hover-bg: #218838;
-            --button-hover-border: #145523;
-            --button-hover-text-color: #ffffff;
-            --footer-color: #555;
-            background-color: #f4f7f6;
-            color: #333;
-        }
-
-        /* Адаптивность */
-        @media (max-width: 480px) {
-            .container { padding: 15px; }
-            textarea { min-height: 100px; }
-            button { padding: 8px 10px; font-size: 1rem; flex: 1; text-align: center; }
-            .light { width: 40px; height: 40px; }
-            #trafficLightComment { font-size: 0.9em; max-width: 100%; }
-        }
-
-        #inputText::placeholder, #searchWordInput::placeholder {
-            transition: opacity 0.4s ease-in-out;
-            color: var(--textarea-color);
-            opacity: 0.7;
-        }
-
-        #mainPageTitle {
-            text-align: center;
-            width: 100%;
-            margin: 10px 0 20px 0;
+            margin: 10px auto 15px auto;
             padding: 0 10px;
-            font-size: 1.5rem;
+            font-style: italic;
+            color: var(--footer-color);
+            font-size: 0.95rem;
         }
 
+        /* --- Единый блок ввода и результата --- */
+        .editor-container {
+            width: 100%;
+            min-height: 200px;
+            margin-bottom: 15px;
+            border: 2px solid var(--textarea-border);
+            border-radius: 5px;
+            background-color: var(--textarea-bg);
+            transition: border-color 0.3s;
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            color: var(--textarea-color);
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+        }
+
+        #resultDisplay {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            color: var(--textarea-color);
+            font-size: 1rem;
+            display: none; /* Скрыто по умолчанию */
+            cursor: text;
+        }
+
+        .poem-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2px;
+            border-bottom: 1px dashed rgba(128, 128, 128, 0.2);
+        }
+
+        .poem-line .text {
+            flex: 1;
+            word-break: break-word;
+            padding-right: 10px;
+        }
+
+        .syllable-count {
+            color: var(--accent-color);
+            font-weight: 900;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            min-width: 25px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* --- Кнопки --- */
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px; 
+            flex-wrap: wrap;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--button-text-color);
+            background-color: var(--button-bg);
+            border: 1px solid var(--button-border);
+            border-radius: 5px;
+            cursor: pointer;
+            flex: 1;
+            min-width: 100px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:active { transform: scale(0.96); }
+
+        /* --- Список стихов --- */
         #savedPoemsList {
             list-style-type: none;
             padding: 0;
             width: 100%;
+            margin: 0;
         }
 
         #savedPoemsList li {
@@ -284,72 +211,57 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            font-size: 0.95rem;
         }
 
-        #savedPoemsList li div {
-            display: flex;
-            gap: 5px;
-        }
+        #savedPoemsList li div { display: flex; gap: 5px; }
+        #savedPoemsList li button { padding: 6px 12px; flex: none; font-size: 1rem; min-width: auto; }
 
-        #savedPoemsList li button {
-            padding: 6px 12px;
-            flex-shrink: 0;
-            font-size: 1rem;
-        }
-
-        .syllable-count {
-            color: var(--accent-color);
-            font-weight: 900;
-            text-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-            margin-left: 5px;
-        }
-
-        .dark-theme .syllable-count { --accent-color: #ff4444; }
-        .light-theme .syllable-count { --accent-color: #00ff00; }
-
-        #dictionaryHelper {
+        footer {
             margin-top: 30px;
-            width: 100%;
+            font-style: italic;
             text-align: center;
+            font-size: 0.8em;
+            color: var(--footer-color);
         }
 
-        #searchWordInput {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 2px solid var(--textarea-border);
-            border-radius: 5px;
-            background-color: var(--textarea-bg);
-            color: var(--textarea-color);
+        /* --- Темы --- */
+        .dark-theme {
+            --container-bg: #2c2c2c;
+            --container-radius: 8px;
+            --textarea-border: #ff5555;
+            --textarea-bg: #111;
+            --textarea-color: #e0e0e0;
+            --button-text-color: #e0e0e0;
+            --button-bg: #dc3545;
+            --button-border: #a71d2a;
+            --footer-color: #777;
+            --accent-color: #ff4444;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
         }
 
-        .search-buttons-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            justify-content: center;
+        .light-theme {
+            --container-bg: #ffffff;
+            --container-radius: 8px;
+            --textarea-border: #00cc66;
+            --textarea-bg: #f9f9f9;
+            --textarea-color: #333;
+            --button-text-color: #ffffff;
+            --button-bg: #28a745; 
+            --button-border: #1e7e34;
+            --footer-color: #555;
+            --accent-color: #00cc66;
+            background-color: #f4f7f6;
+            color: #333;
         }
 
-        .search-btn {
-            font-size: 0.9rem;
-            padding: 8px 12px;
-            flex: 1 1 calc(50% - 10px); /* 2 колонки на мобильных */
-        }
-        
-        #result {
-            width: 100%;
-            margin-top: 15px;
-            padding: 15px;
-            border: 1px dashed var(--textarea-border);
-            border-radius: 5px;
-            background-color: var(--textarea-bg);
-            word-wrap: break-word;
-        }
+        #inputText::placeholder { opacity: 0.6; color: var(--textarea-color); }
     </style>
 </head>
 <body class="dark-theme">
     <div class="container">
-        <h1 id="mainPageTitle"></h1>
+        <h1 id="mainPageTitle">Светофорчик</h1>
 
         <!-- Светофор -->
         <div id="trafficLightContainer" class="traffic-light-display">
@@ -359,28 +271,19 @@
         </div>
         <div id="trafficLightComment">Светофор ждёт ваших творений... ✨</div>
 
-        <!-- Текстовое поле -->
-        <textarea id="inputText" placeholder="Ваш текст здесь..."></textarea>
+        <!-- Единый блок: Ввод и Результат -->
+        <div class="editor-container">
+            <textarea id="inputText" placeholder="Начните писать стихи здесь..."></textarea>
+            <div id="resultDisplay" title="Нажмите, чтобы редактировать"></div>
+        </div>
+
         <div class="button-container">
-            <button id="countButton" data-dark="ПОЕХАЛИ 🚀" data-light="Начать"></button>
-            <button id="clearButton" data-dark="В ТОПКУ 🔥" data-light="Очистить"></button>
-            <button id="saveButton" data-dark="В АРХИВ 🗄️" data-light="Сохранить"></button>
+            <button id="mainActionBtn">ПОСЧИТАТЬ 🚀</button>
+            <button id="clearBtn">В ТОПКУ 🔥</button>
+            <button id="saveBtn">В АРХИВ 🗄️</button>
         </div>
         
-        <div id="result">Здесь будет результат...</div>
         <ul id="savedPoemsList"></ul>
-
-        <!-- Лингвистический Комбайн -->
-        <div id="dictionaryHelper">
-            <h2>Лингвистический Комбайн 🔬</h2>
-            <input type="text" id="searchWordInput" placeholder="Введите слово для анализа...">
-            <div class="search-buttons-container">
-                <button class="search-btn" data-search-type="synonyms" title="Найти похожие по значению слова">Синонимы</button>
-                <button class="search-btn" data-search-type="rhymes" title="Найти слова, созвучные в конце">Рифмы</button>
-                <button class="search-btn" data-search-type="meaning" title="Узнать толкование и значение слова">Значение</button>
-                <button class="search-btn" data-search-type="antonyms" title="Найти противоположные по значению слова">Антонимы</button>
-            </div>
-        </div>
         
         <footer> Сделано с ❤️ для поэтов Лены и Светы! </footer>
     </div>
@@ -388,532 +291,320 @@
     <script>
         // --- Инициализация Telegram Web App ---
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Разворачиваем на весь экран
+        tg.expand(); 
 
-        // Синхронизация темы с Telegram (если открыто в ТГ)
+        function hapticFeedback(style = 'light') {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(style);
+        }
+
+        // Синхронизация темы
         function syncTelegramTheme() {
             if (tg.colorScheme) {
-                if (tg.colorScheme === 'dark') {
-                    document.body.classList.remove('light-theme');
-                    document.body.classList.add('dark-theme');
-                } else {
-                    document.body.classList.remove('dark-theme');
-                    document.body.classList.add('light-theme');
-                }
-                const currentTheme = tg.colorScheme;
-                updateTitle(currentTheme);
-                updatePlaceholders(currentTheme);
-                updateButtonTexts(currentTheme);
+                const isDark = tg.colorScheme === 'dark';
+                document.body.className = isDark ? 'dark-theme' : 'light-theme';
             }
         }
-
         tg.onEvent('themeChanged', syncTelegramTheme);
 
-        // Функция тактильного отклика (вибрации) для Telegram
-        function hapticFeedback(style = 'light') {
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred(style);
-            }
-        }
-
         // --- Настройки строгости ---
-        const STRICTNESS_LEVELS = {
-            dark: {
-                yellowDeviation: 1,    
-                redDeviation: 2,      
-                yellowThreshold: 1,   
-                redThreshold: 1       
-            },
-            light: {
-                yellowDeviation: 4,   
-                redDeviation: 6,      
-                yellowThreshold: 6,   
-                redThreshold: 4       
-            }
+        const STRICTNESS = {
+            dark: { yellowDev: 1, redDev: 2, yellowThresh: 1, redThresh: 1 },
+            light: { yellowDev: 4, redDev: 6, yellowThresh: 6, redThresh: 4 }
         };
 
-        // --- Основные элементы ---
-        const textArea = document.getElementById('inputText');
-        const countButton = document.getElementById('countButton');
-        const resultDiv = document.getElementById('result');
-        const clearButton = document.getElementById('clearButton');
-        const saveButton = document.getElementById('saveButton');
-        const savedPoemsList = document.getElementById('savedPoemsList');
-        const lightRed = document.getElementById('lightRed');
-        const lightYellow = document.getElementById('lightYellow');
-        const lightGreen = document.getElementById('lightGreen');
-        const trafficLightCommentDiv = document.getElementById('trafficLightComment');
-        const searchWordInput = document.getElementById('searchWordInput');
-        const searchButtonsContainer = document.querySelector('#dictionaryHelper .search-buttons-container');
-        const mainPageTitleElement = document.getElementById('mainPageTitle'); 
-
-        const vowels = "аеёиоуыэюяАЕЁИОУЫЭЮЯ"; 
-        const initialResultText = "Здесь будет результат...";
-
-        // --- Комментарии для светофора ---
         const comments = {
             dark: {
-                green: [
-                    "Допущено к публикации. Пока что. 📄✅", 
-                    "Робот-надзиратель зевнул. Скучное совершенство. 🤖💤",
-                    "Ритм как строевой шаг дронов. Тоска. 💂♂️💀",
-                    "Технически безупречно... Как ваш счёт в банке. 💳⚰️",
-                    "Алгоритм одобряет. Людям бы так не скучать. 📊🤖",
-                    "Годится для учебника по выживанию в матрице. 📚🔗"
-                ],
-                yellow: [
-                    "Ритм споткнулся о баг! 🐞💥 Срочно патч!",
-                    "Строки пьяны. Отправьте на детоксикацию! 🍷🚫",
-                    "Метроном в истерике: '11101000!' 💢🤯",
-                    "Словно робот с разряженной батареей. 🔋😴",
-                    "Ритмический вирус обнаружен! 🦠💻 Лечение: перезапись.",
-                    "Ошибка 404: Гармония не найдена. ❌🔍",
-                    "Это не баг, это фича... Но лучше исправьте. 🐜✨"
-                ],
-                red: [
-                    "Уничтожить. Стереть. Забыть. ☠️🔥 (Шучу... Или нет)",
-                    "Ритм отправился в цифровое забвение. 💀⚰️",
-                    "Поздравляю! Вы изобрели анти-поэзию. 🏆☢️",
-                    "Серверы плачут кровавыми слезами. 😭🔪 (Метафорически)",
-                    "Аварийное отключение. Стихи слишком опасны. 🚨⚠️",
-                    "Код красный: СЛОГОВЫЙ АПОКАЛИПСИС. 💥🌋",
-                    "Даже ИИ подаёт на увольнение. 🤖📝"
-                ],
-                form_detected_green: [
-                    "Форма есть. Душа продана дьяволу. 😈📜",
-                    "Каркас одобрен. Теперь добавьте плоть и кровь. 💀💉",
-                    "Скелет собран. Где нервная система? 🧠⚡",
-                    "Шаблон выполнен. Бонус: 5₿ в кошелёк. 💰🔗"
-                ],
-                form_detected_yellow: [
-                    "Форма держится на кофе и проклятиях. ☕🔮",
-                    "Архитектура есть. Фундамент — как у ИТ-стартапа. 🏗️💸",
-                    "Контур угадывается. Детали — как в Terms of Service. 📑👀",
-                    "Схема собрана. Провода искрят адским огнём. 🔥👹"
-                ],
-                default: [
-                    "Добро пожаловать в цифровой ад. Ваши стихи? 🔥💾",
-                    "Тёмная сторона силы ждёт ваших опытов. 🌑⚡",
-                    "Здесь стихи получают NFT-сертификат подлинности. 🖼️💎",
-                    "Введите пароль: •••• (подсказка: это 'хаос') 🔐👾"
-                ]
+                green: ["Допущено к публикации. 📄✅", "Робот одобряет. 🤖", "Идеальный ритм. 💀"],
+                yellow: ["Ритм споткнулся! 🐞", "Словно робот с севшей батареей. 🔋", "Ошибка гармонии. ❌"],
+                red: ["Уничтожить. Стереть. ☠️", "Слоговой апокалипсис. 💥", "Даже ИИ в шоке. 🤖"],
+                default: ["Добро пожаловать в цифровой ад. 🔥", "Тёмная сторона ждёт. 🌑"]
             },
             light: {
-                green: ["Прекрасный ритм! 🌸", "Муза улыбается! 😊", "Идеально! Продолжайте творить! ✨"],
-                yellow: ["Можно лучше, но уже неплохо 🌼", "Маленькие огрехи, но душа есть! 💛", "Почти получилось! Попробуйте ещё раз 🌈"],
-                red: ["Ой, что-то разладилось... 🌧️", "Похоже, ритм заблудился 🐾", "Давайте попробуем ещё разок? 🌱"],
-                form_detected_green: ["Форма и душа в гармонии! 🦋"],
-                form_detected_yellow: ["Красивая форма, чуть-чуть подправить 🌻"],
-                default: ["Светлый режим. Творите с удовольствием! ☀️"]
+                green: ["Прекрасный ритм! 🌸", "Муза улыбается! 😊", "Идеально! ✨"],
+                yellow: ["Можно лучше, но неплохо 🌼", "Маленькие огрехи 💛", "Почти получилось! 🌈"],
+                red: ["Ой, что-то разладилось... 🌧️", "Ритм заблудился 🐾", "Попробуем ещё? 🌱"],
+                default: ["Светлый режим. Творите! ☀️"]
             }
         };
 
-        const PLACEHOLDERS = {
-            textarea: {
-                dark: ["Твои мрачные строки ждут... ", "Готовься к ритмическому апокалипсису...", "Слова должны гореть в аду плохого ритма...", "Строки-зомби ищут мозги..."],
-                light: ["Начни писать солнечные стихи...", "Лепестки слов ждут своего цветка...", "Строки должны пахнуть свежестью...", "Пиши, будто рисуешь радугу...️"]
-            },
-            search: {
-                dark: ["Ищи смысл во тьме... ️", "Анализ слов в стиле ноктюрн ", "Что скрывает теневая лексика? "],
-                light: ["Поиск светлых смыслов ", "Слово как лучик вдохновения ", "Лингвистический детектив "]
-            }
-        };
+        // --- Элементы ---
+        const textArea = document.getElementById('inputText');
+        const resultDisplay = document.getElementById('resultDisplay');
+        const mainActionBtn = document.getElementById('mainActionBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const savedPoemsList = document.getElementById('savedPoemsList');
+        const trafficLightCommentDiv = document.getElementById('trafficLightComment');
+        
+        const vowels = "аеёиоуыэюяАЕЁИОУЫЭЮЯ";
+        let isEditMode = true; // Состояние интерфейса
 
-        const dynamicTitles = {
-            dark: ["Терминатор Свободного Стиха 🤖🔫", "Укротитель Слогов 😈", "Злой Светофорчик 🚦😈", "Камертон Сердитой Музы 😡🎵", "Слого-Мясорубка ⚙️🥩"],
-            light: ["⚪ Добрый Светофорчик", "🌞 Стихотворный Рассвет", "🦋 Муза в Полете", "🌈 Волшебный Слого-Дирижёр", "🧚‍♂️ Фея Гармонии"],
-            base: ["НейроСлогоМетр 🤖", "Слого-Магия ✨", "Это НЕ просто Счётчик Слогов 😉", "Мастерская Ритма 🛠️"]
-        };
-
-        // --- Вспомогательные функции ---
-        function arraysEqual(a, b) {
-            if (a === b) return true;
-            if (a == null || b == null) return false;
-            if (a.length !== b.length) return false;
-            for (let i = 0; i < a.length; ++i) {
-                if (a[i] !== b[i]) return false;
-            }
-            return true;
-        }
-
-        function getRandomElement(arr) {
-            if (!arr || arr.length === 0) return "";
-            return arr[Math.floor(Math.random() * arr.length)];
-        }
-
-        function resetTrafficLightsAndComment() {
-            lightRed.classList.remove('active');
-            lightYellow.classList.remove('active');
-            lightGreen.classList.remove('active');
-            const isDarkTheme = document.body.classList.contains('dark-theme');
-            trafficLightCommentDiv.textContent = getRandomElement(
-                isDarkTheme ? comments.dark.default : comments.light.default
-            );
-        }
-
-        function countSyllablesInLine(line) {
-            const lowerLine = line.toLowerCase();
-            let syllableCount = 0;
-            for (let char of lowerLine) {
-                if (vowels.includes(char)) syllableCount++;
-            }
-            return syllableCount || (line.trim().length > 0 ? 1 : 0);
-        }
-
-        // --- Определения силлабических форм ---
-        const syllabicForms = {
-            hokku: {
-                name: "Хокку (Хайку)",
-                description: "Японское трехстишие со структурой слогов 5-7-5.",
-                check: (counts) => counts.length === 3 && arraysEqual(counts, [5, 7, 5])
-            },
-            tanka: {
-                name: "Танка",
-                description: "Японская пятистишная форма со структурой слогов 5-7-5-7-7.",
-                check: (counts) => counts.length === 5 && arraysEqual(counts, [5, 7, 5, 7, 7])
-            },
-            uniform_poem: {
-                name: "Равномерный стих",
-                description: "Все строки имеют одинаковое количество слогов.",
-                findAndCheck: function(counts) {
-                    if (counts.length < 2) return null;
-                    const firstCount = counts[0];
-                    if (firstCount === 0) return null;
-                    for (let i = 1; i < counts.length; i++) {
-                        if (counts[i] !== firstCount) return null;
+        // --- Логика хранилища (Telegram Cloud + LocalStorage) ---
+        // Асинхронная загрузка
+        function loadData(callback) {
+            if (tg.initDataUnsafe && tg.CloudStorage) {
+                tg.CloudStorage.getItem("savedPoems", (err, value) => {
+                    let data = [];
+                    if (!err && value) {
+                        try { data = JSON.parse(value); } catch(e){}
                     }
-                    return {
-                        name: `Равномерный стих (${counts.length} строк по ${firstCount} слогов)`,
-                        details: `Все ${counts.length} строки содержат по ${firstCount} слогов.`
-                    };
-                }
-            }
-        };
-
-        // --- Анализ текста ---
-        function processAndAnalyzeSyllabicPatterns() {
-            hapticFeedback('medium');
-            const fullText = textArea.value;
-            resetTrafficLightsAndComment();
-
-            if (!fullText.trim()) {
-                resultDiv.innerHTML = "Поле ввода девственно чисто...";
-                return;
-            }
-
-            const lines = fullText.split('\n');
-            let resultsHTML = "";
-            const originalLinesWithSyllables = []; 
-
-            lines.forEach(line => {
-                const syllableCount = countSyllablesInLine(line);
-                originalLinesWithSyllables.push({ text: line, syllables: syllableCount });
-            });
-
-            const syllableCountsForPatternAnalysis = originalLinesWithSyllables
-                .filter(item => item.text.trim() !== "" || item.syllables > 0)
-                .map(item => item.syllables);
-
-            originalLinesWithSyllables.forEach(item => {
-                if (item.text.trim() === "" && item.syllables === 0) { 
-                     resultsHTML += "<br>";
-                } else {
-                    resultsHTML += `${item.text} <strong class="syllable-count">${item.syllables}</strong><br>`;
-                }
-            });
-            resultDiv.innerHTML = resultsHTML;
-
-            let detectedFormsOutput = "";
-            let formsFoundDetails = []; 
-
-            for (const formKey in syllabicForms) {
-                const form = syllabicForms[formKey];
-                if (typeof form.findAndCheck === 'function') {
-                    const foundPattern = form.findAndCheck(syllableCountsForPatternAnalysis);
-                    if (foundPattern) formsFoundDetails.push(`<li><b>${foundPattern.name}</b>: ${foundPattern.details || form.description}</li>`);
-                }
-            }
-            for (const formKey in syllabicForms) {
-                const form = syllabicForms[formKey];
-                if (typeof form.check === 'function') {
-                    if (form.check(syllableCountsForPatternAnalysis)) {
-                        if (!formsFoundDetails.some(detail => detail.toLowerCase().includes(form.name.toLowerCase().split('(')[0].trim()))) {
-                             formsFoundDetails.push(`<li><b>${form.name}</b>: ${form.description}</li>`);
-                        }
-                    }
-                }
-            }
-
-            if (formsFoundDetails.length > 0) {
-                detectedFormsOutput = "<h3>Обнаруженные формы:</h3><ul>" + formsFoundDetails.join("") + "</ul>";
+                    callback(data);
+                });
             } else {
-                detectedFormsOutput = "<h3>Обнаруженные формы:</h3><ul><li>Конкретные силлабические формы не распознаны.</li></ul>";
+                let data = JSON.parse(localStorage.getItem("savedPoems")) || [];
+                callback(data);
             }
-
-            resultDiv.innerHTML += detectedFormsOutput;
-            updateTrafficLight(syllableCountsForPatternAnalysis, formsFoundDetails.length > 0);
         }
 
-        function updateTrafficLight(syllableCounts, formDetected = false) {
-            if (syllableCounts.length === 0) {
-                resetTrafficLightsAndComment();
+        // Асинхронное сохранение
+        function saveData(data, callback) {
+            const dataStr = JSON.stringify(data);
+            if (tg.initDataUnsafe && tg.CloudStorage) {
+                tg.CloudStorage.setItem("savedPoems", dataStr, (err, success) => {
+                    if (callback) callback(success);
+                });
+            } else {
+                localStorage.setItem("savedPoems", dataStr);
+                if (callback) callback(true);
+            }
+        }
+
+        // --- Основные функции ---
+        function countSyllables(line) {
+            let count = 0;
+            for (let char of line.toLowerCase()) {
+                if (vowels.includes(char)) count++;
+            }
+            return count || (line.trim().length > 0 ? 1 : 0);
+        }
+
+        function getDominantCount(counts) {
+            if (!counts || counts.length === 0) return null;
+            if (counts.length === 1) return counts[0];
+
+            const map = new Map();
+            let maxFreq = 0, dominant = null;
+
+            for (let c of counts) {
+                if (c === 0 && counts.length > 1) continue; 
+                map.set(c, (map.get(c) || 0) + 1);
+            }
+            
+            if (Array.from(map.keys()).every(k => k === 0)) return 0;
+
+            for (let [c, freq] of map) {
+                if (c === 0 && map.size > 1) continue; 
+                if (freq > maxFreq) { maxFreq = freq; dominant = c; } 
+                else if (freq === maxFreq && (dominant === null || c > dominant)) { dominant = c; }
+            }
+            
+            if (maxFreq <= counts.length / 2 && new Set(counts.filter(c => c > 0)).size > 2) return null;
+            return dominant;
+        }
+
+        function updateTrafficLight(counts) {
+            document.getElementById('lightRed').classList.remove('active');
+            document.getElementById('lightYellow').classList.remove('active');
+            document.getElementById('lightGreen').classList.remove('active');
+
+            if (counts.length === 0) {
+                const isDark = document.body.classList.contains('dark-theme');
+                trafficLightCommentDiv.textContent = comments[isDark ? 'dark' : 'light'].default[0];
                 return;
             }
 
-            const isDarkTheme = document.body.classList.contains('dark-theme');
-            const strictness = isDarkTheme ? STRICTNESS_LEVELS.dark : STRICTNESS_LEVELS.light;
-            const commentsSet = isDarkTheme ? comments.dark : comments.light;
+            const isDark = document.body.classList.contains('dark-theme');
+            const rules = isDark ? STRICTNESS.dark : STRICTNESS.light;
+            const texts = isDark ? comments.dark : comments.light;
 
-            const dominantCount = getDominantSyllableCount(syllableCounts);
-            let yellowWarnings = 0, redAlerts = 0;
+            const dominant = getDominantCount(counts);
+            let yellow = 0, red = 0;
 
-            if (dominantCount === null && syllableCounts.length > 1) {
-                redAlerts = syllableCounts.length;
-            } else if (dominantCount !== null) {
-                for (let count of syllableCounts) {
-                    const deviation = Math.abs(count - dominantCount);
-                    if (deviation >= strictness.redDeviation) redAlerts++;
-                    else if (deviation >= strictness.yellowDeviation) yellowWarnings++;
+            if (dominant === null && counts.length > 1) {
+                red = counts.length;
+            } else if (dominant !== null) {
+                for (let c of counts) {
+                    const dev = Math.abs(c - dominant);
+                    if (dev >= rules.redDev) red++;
+                    else if (dev >= rules.yellowDev) yellow++;
                 }
             }
 
-            if (redAlerts >= strictness.redThreshold) {
-                lightRed.classList.add('active');
-                trafficLightCommentDiv.textContent = getRandomElement(commentsSet.red);
+            if (red >= rules.redThresh) {
+                document.getElementById('lightRed').classList.add('active');
+                trafficLightCommentDiv.textContent = texts.red[Math.floor(Math.random() * texts.red.length)];
                 hapticFeedback('heavy');
-            } else if (yellowWarnings >= strictness.yellowThreshold) {
-                lightYellow.classList.add('active');
-                trafficLightCommentDiv.textContent = getRandomElement(formDetected ? commentsSet.form_detected_yellow : commentsSet.yellow);
+            } else if (yellow >= rules.yellowThresh) {
+                document.getElementById('lightYellow').classList.add('active');
+                trafficLightCommentDiv.textContent = texts.yellow[Math.floor(Math.random() * texts.yellow.length)];
                 hapticFeedback('medium');
             } else {
-                lightGreen.classList.add('active');
-                trafficLightCommentDiv.textContent = getRandomElement(formDetected ? commentsSet.form_detected_green : commentsSet.green);
+                document.getElementById('lightGreen').classList.add('active');
+                trafficLightCommentDiv.textContent = texts.green[Math.floor(Math.random() * texts.green.length)];
                 hapticFeedback('light');
             }
         }
 
-        function getDominantSyllableCount(syllableCounts) {
-            if (!syllableCounts || syllableCounts.length === 0) return null;
-            if (syllableCounts.length === 1) return syllableCounts[0];
-
-            const countsMap = new Map();
-            let maxFreq = 0;
-            let dominant = null;
-
-            for (let count of syllableCounts) {
-                if (count === 0 && syllableCounts.length > 1) continue; 
-                countsMap.set(count, (countsMap.get(count) || 0) + 1);
-            }
-            
-            if (Array.from(countsMap.keys()).every(k => k === 0)) return 0;
-
-            for (let [count, freq] of countsMap) {
-                if (count === 0 && countsMap.size > 1) continue; 
-                if (freq > maxFreq) {
-                    maxFreq = freq;
-                    dominant = count;
-                } else if (freq === maxFreq) { 
-                    if (dominant === null || count > dominant ) dominant = count;
-                }
-            }
-            if (maxFreq <= syllableCounts.length / 2 && new Set(syllableCounts.filter(c => c > 0)).size > 2) { 
-                return null;
-            }
-            return dominant;
-        }
-
-        function clearFields() {
+        // --- Переключение режимов (Ввод <-> Результат) ---
+        function toggleMode() {
             hapticFeedback('light');
-            textArea.value = "";
-            resultDiv.innerHTML = initialResultText;
-            resetTrafficLightsAndComment();
-        }
+            if (isEditMode) {
+                // Переход в режим просмотра (Анализ)
+                const text = textArea.value;
+                if (!text.trim()) return;
 
-        function savePoem() {
-            hapticFeedback('success');
-            const poem = textArea.value.trim();
-            if (!poem) {
-                tg.showAlert ? tg.showAlert("Нечего сохранять — поле пустое!") : alert("Нечего сохранять — поле пустое!");
-                return;
+                const lines = text.split('\n');
+                let html = '';
+                let counts = [];
+
+                lines.forEach(line => {
+                    const c = countSyllables(line);
+                    if (line.trim() !== "" || c > 0) counts.push(c);
+                    
+                    if (line.trim() === "" && c === 0) {
+                        html += `<div class="poem-line"><span class="text"><br></span><span class="count"></span></div>`;
+                    } else {
+                        html += `<div class="poem-line"><span class="text">${line}</span><span class="count">${c}</span></div>`;
+                    }
+                });
+
+                resultDisplay.innerHTML = html;
+                textArea.style.display = 'none';
+                resultDisplay.style.display = 'block';
+                
+                const isDark = document.body.classList.contains('dark-theme');
+                mainActionBtn.textContent = isDark ? 'РЕДАКТИРОВАТЬ ✏️' : 'Редактировать ✏️';
+                
+                updateTrafficLight(counts);
+                isEditMode = false;
+            } else {
+                // Переход в режим редактирования
+                resultDisplay.style.display = 'none';
+                textArea.style.display = 'block';
+                textArea.focus();
+                
+                const isDark = document.body.classList.contains('dark-theme');
+                mainActionBtn.textContent = isDark ? 'ПОСЧИТАТЬ 🚀' : 'Посчитать 🚀';
+                isEditMode = true;
             }
-            const poems = JSON.parse(localStorage.getItem("savedPoems")) || [];
-            poems.unshift(poem); 
-            localStorage.setItem("savedPoems", JSON.stringify(poems));
-            loadSavedPoems();
-            trafficLightCommentDiv.textContent = "Стих в архиве! 🗄️✍️";
-            setTimeout(resetTrafficLightsAndComment, 2000);
         }
 
-        function loadSavedPoems() {
-            const poems = JSON.parse(localStorage.getItem("savedPoems")) || [];
-            savedPoemsList.innerHTML = ""; 
+        // Клик по результату возвращает к редактированию
+        resultDisplay.addEventListener('click', toggleMode);
+
+        function clearAll() {
+            hapticFeedback('medium');
+            textArea.value = "";
+            if (!isEditMode) toggleMode(); // Вернуться в редактор
+            updateTrafficLight([]);
+        }
+
+        // --- Работа со списком ---
+        function renderList(poems) {
+            savedPoemsList.innerHTML = "";
             poems.forEach((poem, index) => {
                 const li = document.createElement("li");
-                const previewLength = 30;
-                const poemPreview = poem.length > previewLength ? poem.substring(0, previewLength) + "..." : poem;
-
-                li.innerHTML = `<span>${poemPreview.replace(/\n/g, ' ')}</span> 
-                                <div>
-                                    <button onclick="loadPoem(${index})" title="Загрузить">📖</button>
-                                    <button onclick="deletePoem(${index})" title="Удалить">🗑️</button>
-                                </div>`;
+                const preview = poem.length > 30 ? poem.substring(0, 30) + "..." : poem;
+                li.innerHTML = `
+                    <span>${preview.replace(/\n/g, ' ')}</span> 
+                    <div>
+                        <button onclick="loadPoem(${index})">📖</button>
+                        <button onclick="deletePoem(${index})">🗑️</button>
+                    </div>`;
                 savedPoemsList.appendChild(li);
+            });
+        }
+
+        function refreshList() {
+            loadData(renderList);
+        }
+
+        function saveCurrent() {
+            hapticFeedback('success');
+            const text = textArea.value.trim();
+            if (!text) return;
+
+            loadData((poems) => {
+                poems.unshift(text);
+                saveData(poems, () => {
+                    refreshList();
+                    trafficLightCommentDiv.textContent = "Стих сохранён в архив! 🗄️";
+                });
             });
         }
 
         window.loadPoem = function(index) {
             hapticFeedback('light');
-            const poems = JSON.parse(localStorage.getItem("savedPoems")) || [];
-            if (poems[index]) {
-                textArea.value = poems[index];
-                processAndAnalyzeSyllabicPatterns(); 
-            }
+            loadData((poems) => {
+                if (poems[index]) {
+                    textArea.value = poems[index];
+                    if (isEditMode) toggleMode(); // Сразу показываем результат
+                    else {
+                        isEditMode = true; // Сброс состояния чтобы toggleMode сработал корректно
+                        toggleMode();
+                    }
+                }
+            });
         }
 
         window.deletePoem = function(index) {
             hapticFeedback('warning');
-            const confirmDelete = tg.showConfirm ? tg.showConfirm("Удалить это стихотворение из архива?", (res) => {
-                if(res) executeDelete();
-            }) : confirm("Удалить это стихотворение из архива?");
+            const confirmDel = tg.showConfirm ? tg.showConfirm("Удалить стих?", (res) => {
+                if(res) execDel();
+            }) : confirm("Удалить стих?");
             
-            if(confirmDelete === true) executeDelete(); // Fallback for browser
+            if(confirmDel === true) execDel();
 
-            function executeDelete() {
-                const poems = JSON.parse(localStorage.getItem("savedPoems")) || [];
-                poems.splice(index, 1);
-                localStorage.setItem("savedPoems", JSON.stringify(poems));
-                loadSavedPoems();
+            function execDel() {
+                loadData((poems) => {
+                    poems.splice(index, 1);
+                    saveData(poems, refreshList);
+                });
             }
         }
 
-        // --- Логика для Лингвистического Комбайна ---
-        if (searchButtonsContainer) {
-            searchButtonsContainer.addEventListener('click', (event) => {
-                if (event.target.classList.contains('search-btn')) {
-                    hapticFeedback('light');
-                    const word = searchWordInput.value.trim();
-                    const searchType = event.target.dataset.searchType;
-                    if (!word) {
-                        searchWordInput.placeholder = "Сначала введите слово!";
-                        setTimeout(()=> { 
-                            const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
-                            updatePlaceholders(currentTheme);
-                        }, 2000);
-                        return;
-                    }
-                    let query = "";
-                    switch (searchType) {
-                        case "synonyms": query = `синонимы к слову ${word}`; break;
-                        case "rhymes": query = `рифмы к слову ${word}`; break;
-                        case "meaning": query = `значение слова ${word}`; break;
-                        case "antonyms": query = `антонимы к слову ${word}`; break;
-                    }
-                    if (query) {
-                        const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-                        // Используем метод Telegram для открытия ссылок
-                        if (tg.openLink) {
-                            tg.openLink(url);
-                        } else {
-                            window.open(url, '_blank');
-                        }
-                    }
-                }
-            });
-        }
-
-        // --- Переключение тем вручную ---
-        const trafficLightContainer = document.getElementById('trafficLightContainer');
-        if (trafficLightContainer) {
-            trafficLightContainer.addEventListener('click', () => {
-                hapticFeedback('rigid');
-                const body = document.body;
-                const isDarkTheme = body.classList.contains('dark-theme');
-
-                body.classList.toggle('dark-theme');
-                body.classList.toggle('light-theme');
-
-                const newThemeType = isDarkTheme ? 'light' : 'dark';
-                updateTitle(newThemeType);
-                updatePlaceholders(newThemeType);
-                updateButtonTexts(newThemeType);
-                flashLights();
-            });
-        }
-
-        function flashLights() {
-            lightRed.classList.add('active');
-            lightYellow.classList.add('active');
-            lightGreen.classList.add('active');
-
+        // --- Смена темы по клику на светофор ---
+        document.getElementById('trafficLightContainer').addEventListener('click', () => {
+            hapticFeedback('rigid');
+            document.body.classList.toggle('dark-theme');
+            document.body.classList.toggle('light-theme');
+            
+            const isDark = document.body.classList.contains('dark-theme');
+            mainActionBtn.textContent = isEditMode 
+                ? (isDark ? 'ПОСЧИТАТЬ 🚀' : 'Посчитать 🚀') 
+                : (isDark ? 'РЕДАКТИРОВАТЬ ✏️' : 'Редактировать ✏️');
+            clearBtn.textContent = isDark ? 'В ТОПКУ 🔥' : 'Очистить';
+            saveBtn.textContent = isDark ? 'В АРХИВ 🗄️' : 'Сохранить';
+            
+            // Заставляем светофор мигнуть и обновиться
+            document.getElementById('lightRed').classList.add('active');
+            document.getElementById('lightYellow').classList.add('active');
+            document.getElementById('lightGreen').classList.add('active');
+            
             setTimeout(() => {
-                if (textArea.value.trim()) {
-                     processAndAnalyzeSyllabicPatterns();
+                if (!isEditMode) {
+                    isEditMode = true; toggleMode(); // Пересчет
                 } else {
-                    resetTrafficLightsAndComment();
+                    updateTrafficLight([]);
                 }
-            }, 500);
-        }
-
-        function updatePlaceholders(themeType) {
-            const textareaPlaceholders = PLACEHOLDERS.textarea[themeType] || PLACEHOLDERS.textarea.light;
-            const searchPlaceholders = PLACEHOLDERS.search[themeType] || PLACEHOLDERS.search.light;
-            textArea.placeholder = getRandomElement(textareaPlaceholders);
-            searchWordInput.placeholder = getRandomElement(searchPlaceholders);
-        }
-
-        function updateTitle(themeType = 'base') { 
-            if (!mainPageTitleElement) return;
-            const titles = dynamicTitles[themeType] || dynamicTitles.base;
-            mainPageTitleElement.style.opacity = 0;
-            setTimeout(() => {
-                mainPageTitleElement.textContent = getRandomElement(titles);
-                mainPageTitleElement.style.opacity = 1;
-            }, 150); 
-        }
-
-        function updateButtonTexts(themeType) {
-            const buttonsToUpdate = [
-                { element: countButton, darkText: 'ПОЕХАЛИ 🚀', lightText: 'Начать' },
-                { element: clearButton, darkText: 'В ТОПКУ 🔥', lightText: 'Очистить' },
-                { element: saveButton, darkText: 'В АРХИВ 🗄️', lightText: 'Сохранить' }
-            ];
-
-            buttonsToUpdate.forEach(btnConfig => {
-                if (btnConfig.element) {
-                    const darkData = btnConfig.element.dataset.dark;
-                    const lightData = btnConfig.element.dataset.light;
-                    if (darkData && lightData) {
-                        btnConfig.element.textContent = themeType === 'dark' ? darkData : lightData;
-                    } else {
-                         btnConfig.element.textContent = themeType === 'dark' ? btnConfig.darkText : btnConfig.lightText;
-                    }
-                }
-            });
-        }
-
-        // --- Инициализация при загрузке ---
-        document.addEventListener('DOMContentLoaded', () => {
-            syncTelegramTheme(); // Применяем тему ТГ сразу при старте
-            
-            if (mainPageTitleElement && !mainPageTitleElement.textContent) {
-                mainPageTitleElement.textContent = document.title;
-            }
-            
-            const initialTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
-            updateTitle(initialTheme); 
-            loadSavedPoems();
-            resetTrafficLightsAndComment();
-            updatePlaceholders(initialTheme);
-            updateButtonTexts(initialTheme); 
-
-            if (textArea.value.trim()) {
-                processAndAnalyzeSyllabicPatterns();
-            }
+            }, 300);
         });
 
-        if (countButton) countButton.addEventListener('click', processAndAnalyzeSyllabicPatterns);
-        if (clearButton) clearButton.addEventListener('click', clearFields);
-        if (saveButton) saveButton.addEventListener('click', savePoem);
+        // --- Инициализация ---
+        document.addEventListener('DOMContentLoaded', () => {
+            syncTelegramTheme();
+            refreshList();
+            updateTrafficLight([]);
+            
+            const isDark = document.body.classList.contains('dark-theme');
+            mainActionBtn.textContent = isDark ? 'ПОСЧИТАТЬ 🚀' : 'Посчитать 🚀';
+            clearBtn.textContent = isDark ? 'В ТОПКУ 🔥' : 'Очистить';
+            saveBtn.textContent = isDark ? 'В АРХИВ 🗄️' : 'Сохранить';
+        });
+
+        mainActionBtn.addEventListener('click', toggleMode);
+        clearBtn.addEventListener('click', clearAll);
+        saveBtn.addEventListener('click', saveCurrent);
 
     </script>
 </body>
