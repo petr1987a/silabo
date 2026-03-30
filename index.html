@@ -550,55 +550,112 @@
             resetTrafficLights();
         }
 
-        // --- НАДЕЖНОЕ СОХРАНЕНИЕ (Локальное хранилище) ---
-        const STORAGE_KEY = "savedPoems";
-        const MAX_POEMS = 15; 
+        // --- НАДЕЖНОЕ СОХРАНЕНИЕ (TELEGRAM CLOUD STORAGE + LOCAL STORAGE) ---
+        const STORAGE_KEY = "savedPoemsApp";
+        const MAX_POEMS = 10; 
 
+        // Функция сохранения
         function savePoem() {
             hapticFeedback('success');
             const poem = textArea.value.trim();
             
             if (!poem) {
-                tg.showAlert ? tg.showAlert("Нечего сохранять — поле пустое!") : alert("Нечего сохранять!");
+                if (tg.showAlert) tg.showAlert("Нечего сохранять — поле пустое!");
+                else alert("Нечего сохранять!");
                 return;
             }
 
-            try {
-                let poems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-                
+            trafficLightCommentDiv.textContent = "Сохраняем... ⏳";
+
+            // Читаем текущие стихи
+            loadData((poems) => {
                 // Проверка на дубликаты
                 if (poems.includes(poem)) {
                     trafficLightCommentDiv.textContent = "Этот стих уже есть в архиве! 🗄️";
                     return;
                 }
 
+                // Добавляем новый стих в начало
                 poems.unshift(poem);
                 if (poems.length > MAX_POEMS) poems = poems.slice(0, MAX_POEMS);
 
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(poems));
-                trafficLightCommentDiv.textContent = "Стих успешно сохранен в архив! 🗄️✍️";
-                loadSavedPoems();
-                
-                setTimeout(() => {
-                    if(isEditMode) resetTrafficLights();
-                }, 2000);
-
-            } catch (e) {
-                console.error("Ошибка сохранения:", e);
-                trafficLightCommentDiv.textContent = "Ошибка при сохранении! ❌";
-            }
+                // Сохраняем обновленный массив
+                saveData(poems, () => {
+                    trafficLightCommentDiv.textContent = "Стих успешно сохранен! ☁️✅";
+                    renderSavedPoems(poems);
+                    setTimeout(() => {
+                        if(isEditMode) resetTrafficLights();
+                    }, 2000);
+                });
+            });
         }
 
+        // Функция загрузки списка
         function loadSavedPoems() {
-            try {
-                const poems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            loadData((poems) => {
                 renderSavedPoems(poems);
-            } catch (e) {
-                console.error("Ошибка загрузки:", e);
-                renderSavedPoems([]);
+            });
+        }
+
+        // Универсальная функция чтения (Облако ТГ или Браузер)
+        function loadData(callback) {
+            if (tg.CloudStorage && tg.isVersionAtLeast && tg.isVersionAtLeast("6.9")) {
+                tg.CloudStorage.getItem(STORAGE_KEY, (err, val) => {
+                    if (err) {
+                        console.error("TG Cloud Read Error:", err);
+                        // Фолбэк на localStorage при ошибке облака
+                        fallbackLocalLoad(callback);
+                    } else {
+                        let data = [];
+                        if (val) {
+                            try { data = JSON.parse(val); } catch(e) {}
+                        }
+                        callback(data);
+                    }
+                });
+            } else {
+                fallbackLocalLoad(callback);
             }
         }
 
+        function fallbackLocalLoad(callback) {
+            let data = [];
+            try {
+                const val = localStorage.getItem(STORAGE_KEY);
+                if (val) data = JSON.parse(val);
+            } catch(e) {}
+            callback(data);
+        }
+
+        // Универсальная функция записи (Облако ТГ или Браузер)
+        function saveData(poemsArray, onSuccess) {
+            const dataString = JSON.stringify(poemsArray);
+
+            if (tg.CloudStorage && tg.isVersionAtLeast && tg.isVersionAtLeast("6.9")) {
+                tg.CloudStorage.setItem(STORAGE_KEY, dataString, (err, success) => {
+                    if (err) {
+                        if (tg.showAlert) tg.showAlert("Ошибка облака ТГ: " + err);
+                        // Если облако не сработало, пишем локально
+                        fallbackLocalSave(dataString, onSuccess);
+                    } else {
+                        onSuccess();
+                    }
+                });
+            } else {
+                fallbackLocalSave(dataString, onSuccess);
+            }
+        }
+
+        function fallbackLocalSave(dataString, onSuccess) {
+            try {
+                localStorage.setItem(STORAGE_KEY, dataString);
+                onSuccess();
+            } catch(e) {
+                if (tg.showAlert) tg.showAlert("Память устройства переполнена!");
+            }
+        }
+
+        // Отрисовка списка
         function renderSavedPoems(poems) {
             savedPoemsList.innerHTML = ""; 
             poems.forEach((poem, index) => {
@@ -613,22 +670,28 @@
             });
         }
 
+        // Загрузка стиха в редактор
         window.loadPoem = function(index) {
             hapticFeedback('light');
-            let poems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            if (poems[index]) {
-                textArea.value = poems[index];
-                if (!isEditMode) toggleMode(); // Возвращаем в режим редактора, чтобы пользователь сам нажал "Поехали"
-            }
+            loadData((poems) => {
+                if (poems[index]) {
+                    textArea.value = poems[index];
+                    if (!isEditMode) toggleMode(); 
+                }
+            });
         }
 
+        // Удаление стиха
         window.deletePoem = function(index) {
             hapticFeedback('warning');
+            
             const executeDelete = () => {
-                let poems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-                poems.splice(index, 1);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(poems));
-                loadSavedPoems();
+                loadData((poems) => {
+                    poems.splice(index, 1);
+                    saveData(poems, () => {
+                        renderSavedPoems(poems);
+                    });
+                });
             };
 
             if (tg.showConfirm) {
