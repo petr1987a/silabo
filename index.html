@@ -92,30 +92,49 @@
             font-size: 1.1rem;
         }
 
-        button {
-            padding: 12px 15px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--button-text-color);
-            background-color: var(--button-bg);
-            border: 1px solid var(--button-border);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-            flex: 1;
-            text-align: center;
-        }
-
-        button:active {
-            transform: scale(0.96);
-        }
-
+        /* --- КРАСИВЫЕ КНОПКИ --- */
         .button-container {
             display: flex;
             justify-content: space-between;
-            gap: 10px; 
+            gap: 8px; 
             width: 100%;
             margin: 15px 0;
+        }
+
+        button {
+            /* Flexbox для идеального центрирования и компоновки друг над другом */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            
+            /* Магия одинакового размера: flex: 1 1 0 заставляет кнопки быть строго равной ширины */
+            flex: 1 1 0; 
+            
+            min-height: 65px; /* Удобная высота для нажатия пальцем */
+            padding: 8px 4px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            line-height: 1.2;
+            text-align: center;
+            
+            color: var(--button-text-color);
+            background-color: var(--button-bg);
+            border: 1px solid var(--button-border);
+            border-radius: 10px; /* Чуть больше скругления для красоты */
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.95); /* Приятный эффект нажатия */
+        }
+
+        /* Класс для смайликов внутри кнопок */
+        .btn-emoji {
+            font-size: 1.4rem; /* Смайлик чуть крупнее текста */
+            margin-top: 4px;
+            display: block;
         }
 
         #trafficLightComment {
@@ -235,7 +254,8 @@
 
         @media (max-width: 480px) {
             .container { padding: 12px; margin: 5px auto;}
-            button { padding: 10px 5px; font-size: 0.95rem; }
+            button { font-size: 0.85rem; min-height: 60px; } /* Чуть меньше шрифт для мобилок, чтобы влезало точно */
+            .btn-emoji { font-size: 1.2rem; margin-top: 2px; }
             .light { width: 45px; height: 45px; }
             #trafficLightComment { font-size: 0.9em; }
         }
@@ -287,11 +307,13 @@
         }
 
         #savedPoemsList li button {
+            min-height: auto; /* Сбрасываем высоту для маленьких кнопок списка */
             padding: 6px 10px;
-            flex: none;
+            flex: none; /* Отменяем растягивание */
             font-size: 1.2rem;
             background-color: transparent;
             border: 1px solid var(--button-border);
+            flex-direction: row; /* Возвращаем в строку */
         }
     </style>
 </head>
@@ -315,9 +337,9 @@
 
         <!-- Кнопки управления -->
         <div class="button-container">
-            <button id="clearButton">В ТОПКУ 🔥</button>
-            <button id="countButton" data-dark="ПОЕХАЛИ 🚀" data-light="Начать 🚀">ПОЕХАЛИ 🚀</button>
-            <button id="saveButton">В АРХИВ 🗄️</button>
+            <button id="clearButton"></button>
+            <button id="countButton"></button>
+            <button id="saveButton"></button>
         </div>
         
         <!-- Архив -->
@@ -443,7 +465,8 @@
         // --- Основная логика: Переключение между Редактором и Результатом ---
         function toggleMode() {
             hapticFeedback('medium');
-            
+            const isDark = document.body.classList.contains('dark-theme');
+
             if (isEditMode) {
                 const text = textArea.value;
                 if (!text.trim()) {
@@ -472,7 +495,8 @@
                 
                 updateTrafficLight(counts);
                 
-                countButton.textContent = "✏️ ИСПРАВИТЬ";
+                // Меняем текст кнопки на "Исправить"
+                countButton.innerHTML = isDark ? "ИСПРАВИТЬ<span class='btn-emoji'>✏️</span>" : "Исправить<span class='btn-emoji'>✏️</span>";
                 isEditMode = false;
 
             } else {
@@ -480,8 +504,8 @@
                 resultDisplay.style.display = 'none';
                 resetTrafficLights();
                 
-                const isDark = document.body.classList.contains('dark-theme');
-                countButton.textContent = isDark ? countButton.dataset.dark : countButton.dataset.light;
+                // Возвращаем текст кнопки "Поехали"
+                countButton.innerHTML = isDark ? "ПОЕХАЛИ<span class='btn-emoji'>🚀</span>" : "Начать<span class='btn-emoji'>🚀</span>";
                 isEditMode = true;
             }
         }
@@ -621,7 +645,6 @@
             }
         }
 
-        // --- ИСПРАВЛЕННОЕ УДАЛЕНИЕ ---
         window.deletePoem = function(index) {
             hapticFeedback('warning');
             
@@ -636,7 +659,6 @@
                 }
             };
 
-            // Проверяем, поддерживает ли текущая версия Telegram метод showConfirm (появился в 6.2)
             if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
                 tg.showConfirm("Удалить это стихотворение из архива?", function(isConfirmed) {
                     if (isConfirmed) {
@@ -644,7 +666,6 @@
                     }
                 });
             } else {
-                // Если версия старая или открыто в обычном браузере
                 if (confirm("Удалить это стихотворение из архива?")) {
                     executeDelete();
                 }
@@ -669,6 +690,7 @@
             }, 500);
         });
 
+        // --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА (Тексты кнопок со смайликами) ---
         function updateUIForTheme() {
             const isDark = document.body.classList.contains('dark-theme');
             const theme = isDark ? 'dark' : 'light';
@@ -681,10 +703,14 @@
 
             textArea.placeholder = getRandomElement(PLACEHOLDERS[theme]);
 
-            clearButton.textContent = isDark ? "В ТОПКУ 🔥" : "Очистить 🗑️";
-            saveButton.textContent = isDark ? "В АРХИВ 🗄️" : "Сохранить 💾";
+            // Обновляем кнопки с использованием HTML для переноса строки и стилизации смайлика
+            clearButton.innerHTML = isDark ? "В ТОПКУ<span class='btn-emoji'>🔥</span>" : "Очистить<span class='btn-emoji'>🗑️</span>";
+            saveButton.innerHTML = isDark ? "В АРХИВ<span class='btn-emoji'>🗄️</span>" : "Сохранить<span class='btn-emoji'>💾</span>";
+            
             if (isEditMode) {
-                countButton.textContent = isDark ? countButton.dataset.dark : countButton.dataset.light;
+                countButton.innerHTML = isDark ? "ПОЕХАЛИ<span class='btn-emoji'>🚀</span>" : "Начать<span class='btn-emoji'>🚀</span>";
+            } else {
+                countButton.innerHTML = isDark ? "ИСПРАВИТЬ<span class='btn-emoji'>✏️</span>" : "Исправить<span class='btn-emoji'>✏️</span>";
             }
         }
 
